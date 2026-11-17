@@ -1,0 +1,21 @@
+{
+  "name": "condutor-regulagov-app",
+  "version": "2.0.0",
+  "description": "Aplicativo Android Nativo do Condutor TFD - RegulaGOV Prefeitura de Acari/RN",
+  "main": "www/index.html",
+  "scripts": {
+    "start": "npx serve www -l 3000",
+    "cap:init": "npx cap add android",
+    "cap:sync": "npx cap sync android",
+    "cap:open": "npx cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/geolocation": "^6.0.0",
+    "@capacitor/status-bar": "^6.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0"
+  }
+}

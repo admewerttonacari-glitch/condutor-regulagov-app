@@ -1,0 +1,10 @@
+{
+  "name": "Condutor RegulaGOV - Prefeitura de Acari",
+  "short_name": "Condutor TFD",
+  "description": "Aplicativo Oficial do Condutor TFD - RegulaGOV Acari/RN",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F8FAFC",
+  "theme_color": "#0284C7"
+}

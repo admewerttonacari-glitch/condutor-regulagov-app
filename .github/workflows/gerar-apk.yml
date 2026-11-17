@@ -1,0 +1,76 @@
+name: Gerar APK Android - Condutor RegulaGOV
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar código do projeto
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Configurar Java JDK 21 (Compilador Oficial Android)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Instalar dependências e criar projeto Android Nativo
+        run: |
+          npm install
+          if [ ! -d "android" ]; then
+            npx cap add android
+          else
+            npx cap sync android
+          fi
+
+      - name: Configurar Ícone Oficial RegulaGov e Permissões de GPS no Android
+        run: |
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          if ! grep -q "ACCESS_FINE_LOCATION" "$MANIFEST"; then
+            sed -i 's|<application|<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n    <application|' "$MANIFEST"
+          fi
+          if [ -f "logo_icone.png" ]; then
+            sudo apt-get update && sudo apt-get install -y imagemagick
+            for dir in android/app/src/main/res/mipmap-*; do
+              if [ -f "$dir/ic_launcher.png" ]; then
+                convert logo_icone.png -gravity West -crop 32%x100%+0+0 +repage -background white -gravity center -resize 420x420 -extent 512x512 "$dir/ic_launcher.png" || true
+                cp "$dir/ic_launcher.png" "$dir/ic_launcher_round.png" || true
+                cp "$dir/ic_launcher.png" "$dir/ic_launcher_foreground.png" || true
+              fi
+            done
+          fi
+
+      - name: Compilar arquivo APK instalável
+        working-directory: ./android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+          cp app/build/outputs/apk/debug/app-debug.apk ../Condutor-RegulaGOV.apk
+
+      - name: Disponibilizar o Aplicativo Condutor-RegulaGOV.apk nos Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Condutor-RegulaGOV-APK
+          path: Condutor-RegulaGOV.apk
+
+      - name: Publicar Link Direto de Download em Releases
+        uses: softprops/action-gh-release@v2
+        if: always() && hashFiles('Condutor-RegulaGOV.apk') != ''
+        with:
+          tag_name: v2.0.0
+          name: "Aplicativo Android - Condutor RegulaGov (APK)"
+          body: "Instalador oficial para celulares Android da Frota TFD - Prefeitura de Acari/RN. Baixe o arquivo **Condutor-RegulaGOV.apk** abaixo."
+          files: Condutor-RegulaGOV.apk
+          prerelease: false

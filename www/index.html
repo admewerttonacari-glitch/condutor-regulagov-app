@@ -1,0 +1,2183 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Condutor TFD - App do Motorista | RegulaGov</title>
+    
+    <!-- Configurações PWA e Mobile Nativo (Paleta Original #0284C7) -->
+    <meta name="theme-color" content="#0284C7">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Condutor RegulaGov">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="logo_icone.png">
+    <link rel="apple-touch-icon" href="logo_icone.png">
+
+    <!-- Tailwind CSS & Tipografia Oficial -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #0284C7;
+            --primary-dark: #0369A1;
+            --accent-green: #059669;
+            --border-color: #E2E8F0;
+            --bg-app: #F8FAFC;
+        }
+
+        * {
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        input, textarea, select {
+            user-select: text;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: #F8FAFC;
+            color: #0F172A;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            overscroll-behavior-y: contain;
+        }
+
+        .app-shell {
+            width: 100%;
+            max-width: 520px;
+            min-height: 100vh;
+            background: #FFFFFF;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            border-left: 1px solid #E2E8F0;
+            border-right: 1px solid #E2E8F0;
+            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.05);
+        }
+
+        .step-dot {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 800;
+            flex-shrink: 0;
+            transition: all 0.25s ease;
+        }
+
+        .bottom-nav-shadow {
+            box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.06);
+        }
+
+        @media print {
+            body * { visibility: hidden; }
+            #modalComprovante, #modalComprovante * { visibility: visible; }
+            #modalComprovante { position: absolute; left: 0; top: 0; width: 100%; background: white; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-shell">
+        
+        <!-- ========================================================
+             CABEÇALHO OFICIAL COM LOGO_ICONE.PNG
+             ======================================================== -->
+        <header class="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 z-30">
+            <div class="flex items-center gap-2">
+                <!-- LOGO OFICIAL DO SISTEMA (Substitui o texto e o ícone antigo) -->
+                <img src="logo_icone.png" alt="RegulaGov" class="h-8 w-auto object-contain">
+                <div class="border-l border-slate-200 pl-2">
+                    <span class="text-[10px] font-bold bg-sky-100 text-sky-800 px-2 py-0.5 rounded-full border border-sky-200 block leading-tight w-fit">Condutor</span>
+                    <p class="text-[10px] text-slate-500 font-medium mt-0.5 leading-none">Acari / SMS</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <!-- Botão SOS Rápido no Topo -->
+                <button type="button" id="btnSosTopo" onclick="abrirModalSos()" class="hidden items-center gap-1 text-[11px] font-extrabold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2.5 py-1 rounded-full transition" title="Relatar Intercorrência / SOS">
+                    <svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" stroke-width="2.3" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    <span>SOS</span>
+                </button>
+
+                <!-- Indicador GPS Satélite -->
+                <div id="badgeConexao" class="flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
+                    <span id="dotConexao" class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+                    <span id="txtConexao">GPS Satélite</span>
+                </div>
+
+                <!-- Botão Sair (SVG) -->
+                <button type="button" id="btnSairMotorista" onclick="fazerLogoutMotorista()" class="hidden text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-slate-100 transition" title="Sair da conta">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- ========================================================
+             TELA 1: LOGIN POR CPF + DEFINIÇÃO DA 1ª SENHA PELO CONDUTOR
+             ======================================================== -->
+        <div id="telaIdentificacao" class="p-6 flex-1 flex flex-col justify-between">
+            <div class="my-auto">
+                <div class="text-center my-4">
+                    <!-- LOGO OFICIAL EM DESTAQUE NA TELA INICIAL -->
+                    <div class="bg-slate-50/80 border border-slate-200/80 rounded-2xl px-6 py-4 inline-flex items-center justify-center mb-4 shadow-xs">
+                        <img src="logo_icone.png" alt="Logo Oficial RegulaGov" class="h-14 w-auto object-contain mx-auto">
+                    </div>
+                    <h1 class="text-lg font-extrabold text-slate-900">Módulo do Condutor TFD</h1>
+                    <p class="text-xs text-slate-500 mt-1 max-w-xs mx-auto">
+                        Acesso exclusivo por CPF. No seu primeiro acesso, você mesmo define sua senha pessoal de segurança.
+                    </p>
+                </div>
+
+                <!-- ETAPA 1 DO LOGIN: INFORMAR O CPF -->
+                <form id="formEtapaCpf" onsubmit="verificarCpfCondutor(event)" class="mt-6 space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">Digite seu CPF:</label>
+                        <div class="relative">
+                            <input type="text" id="inputCpfLogin" inputmode="numeric" maxlength="14" required oninput="aplicarMascaraCpf(this)" placeholder="000.000.000-00" class="w-full px-4 py-3 text-base bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-sky-600 focus:ring-2 focus:ring-sky-100 font-extrabold text-slate-900 tracking-wider outline-none transition">
+                        </div>
+                    </div>
+
+                    <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[11.5px] text-amber-900 flex items-start gap-2.5">
+                        <svg class="w-5 h-5 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"/>
+                        </svg>
+                        <div>
+                            <strong>Aviso de Segurança & Auditoria:</strong><br>
+                            Este sistema exige o acionamento do GPS nativo de alta precisão do smartphone. Aplicativos de simulação de coordenadas (Fake GPS) são bloqueados automaticamente.
+                        </div>
+                    </div>
+
+                    <button type="submit" id="btnAvancarCpf" class="w-full bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white font-extrabold py-3 px-4 rounded-xl shadow-md shadow-sky-600/20 text-sm transition flex items-center justify-center gap-2">
+                        <span>Continuar</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                    </button>
+                </form>
+
+                <!-- ETAPA 2A DO LOGIN: JÁ TEM SENHA CADASTRADA -->
+                <form id="formEtapaSenhaExistente" onsubmit="confirmarLoginComSenha(event)" class="hidden mt-6 space-y-4">
+                    <div class="bg-sky-50 border border-sky-200 rounded-xl p-3 flex items-center justify-between">
+                        <div>
+                            <span class="text-[10px] font-bold text-sky-700 uppercase block">Condutor Identificado</span>
+                            <strong id="txtNomeCondutorLogin" class="text-sm font-extrabold text-slate-900">-</strong>
+                            <span id="txtCpfCondutorLogin" class="text-[11px] text-slate-500 block font-mono">-</span>
+                        </div>
+                        <button type="button" onclick="voltarParaEtapaCpf()" class="text-xs font-bold text-sky-700 hover:underline">Trocar CPF</button>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">Digite sua Senha de Acesso:</label>
+                        <input type="password" id="inputSenhaExistente" required placeholder="Sua senha pessoal" class="w-full px-3.5 py-3 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-sky-600 focus:ring-2 focus:ring-sky-100 font-bold text-slate-800 outline-none transition">
+                    </div>
+
+                    <button type="submit" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-extrabold py-3 px-4 rounded-xl shadow-md shadow-sky-600/20 text-sm transition flex items-center justify-center gap-2">
+                        <span>Entrar na Minha Escala</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                    </button>
+                </form>
+
+                <!-- ETAPA 2B DO LOGIN: 1º ACESSO - CONDUTOR DEFINE A PRÓPRIA SENHA -->
+                <form id="formEtapaCriarSenha" onsubmit="salvarPrimeiraSenhaCondutor(event)" class="hidden mt-6 space-y-4">
+                    <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 space-y-1">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10.5px] font-extrabold bg-emerald-600 text-white px-2 py-0.5 rounded-full uppercase">Primeiro Acesso</span>
+                            <button type="button" onclick="voltarParaEtapaCpf()" class="text-xs font-bold text-emerald-800 hover:underline">Alterar CPF</button>
+                        </div>
+                        <p class="text-xs font-extrabold text-slate-900 pt-1" id="txtBoasVindasPrimeiroAcesso">Olá, Condutor!</p>
+                        <p class="text-[11px] text-slate-600">Defina abaixo a sua senha pessoal. Você usará ela nos próximos acessos.</p>
+                    </div>
+
+                    <!-- Caso o CPF ainda não estivesse vinculado a um motorista no banco legado, permite vincular ao nome -->
+                    <div id="boxVincularNomePrimeiroAcesso" class="hidden">
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">Confirme seu Nome na Frota para vincular ao seu CPF:</label>
+                        <select id="selVincularMotoristaCpf" class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-sky-600 font-semibold text-slate-800 outline-none">
+                            <option value="">-- Selecione seu Nome --</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">Crie sua Senha (mínimo 4 caracteres):</label>
+                        <input type="password" id="inputNovaSenha1" required minlength="4" placeholder="Crie uma senha fácil de lembrar" class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-emerald-600 font-bold text-slate-800 outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">Confirme sua Senha:</label>
+                        <input type="password" id="inputNovaSenha2" required minlength="4" placeholder="Repita a senha criada" class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-emerald-600 font-bold text-slate-800 outline-none">
+                    </div>
+
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-3 px-4 rounded-xl shadow-md shadow-emerald-600/20 text-sm transition flex items-center justify-center gap-2">
+                        <span>Salvar Minha Senha e Entrar</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                    </button>
+                </form>
+            </div>
+
+            <footer class="border-t border-slate-100 pt-3 text-center text-[10.5px] text-slate-400">
+                RegulaGov Transporte Sanitário • Sistema Oficial de Regulação de Acari/RN
+            </footer>
+        </div>
+
+        <!-- ========================================================
+             TELA 2: PAINEL DA MISSÃO / CONDUTOR LOGADO
+             ======================================================== -->
+        <div id="telaMissao" class="hidden flex-1 flex flex-col pb-20 bg-slate-50/60">
+            
+            <!-- BARRA DE PERFIL DO CONDUTOR -->
+            <div class="bg-slate-900 text-white px-4 py-3 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700 text-sky-400 flex items-center justify-center shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Condutor Escalado</span>
+                        <h2 id="txtNomeCondutor" class="text-sm font-extrabold text-white leading-tight">Nome do Condutor</h2>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <span id="txtDataHoje" class="text-[11px] font-bold text-sky-400 block">-</span>
+                    <span id="txtFilaOffline" class="text-[10px] text-slate-400">Frota de Saúde</span>
+                </div>
+            </div>
+
+            <!-- ==============================================
+                 CONTEÚDO ABA 1: REGISTRO DA VIAGEM E GPS
+                 ============================================== -->
+            <div id="abaConteudoMissao" class="p-4 space-y-4">
+                
+                <!-- CARD PRINCIPAL DA MISSÃO DO DIA -->
+                <div id="boxCardMissao" class="bg-gradient-to-br from-sky-50 to-white border border-sky-200 rounded-2xl p-4 shadow-sm">
+                    <div class="flex justify-between items-start mb-2 gap-2">
+                        <div>
+                            <span class="text-[10.5px] font-extrabold bg-sky-600 text-white px-2.5 py-0.5 rounded-full uppercase tracking-wider inline-flex items-center gap-1">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span>Ordem de Viagem TFD</span>
+                            </span>
+                            <h3 id="txtDestinoMissao" class="text-lg font-extrabold text-slate-900 mt-1.5 flex items-center gap-1.5">
+                                Carregando missão...
+                            </h3>
+                            <p id="txtVeiculoMissao" class="text-xs text-slate-600 font-semibold mt-0.5">
+                                -
+                            </p>
+                        </div>
+                        <div class="text-right shrink-0">
+                            <span id="badgeStatusMissao" class="text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-slate-200 text-slate-700 inline-block">
+                                Aguardando Saída
+                            </span>
+                            <div id="txtValorDiaria" class="text-xs font-extrabold text-emerald-700 mt-1.5">
+                                Diária: R$ -
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-sky-100 text-xs">
+                        <div class="bg-white/90 p-2 rounded-xl border border-sky-100">
+                            <span class="text-[10px] text-slate-500 font-bold block">Saída Prevista</span>
+                            <strong id="txtHoraPrevista" class="text-slate-900 font-extrabold">03:00h</strong>
+                        </div>
+                        <div class="bg-white/90 p-2 rounded-xl border border-sky-100">
+                            <span class="text-[10px] text-slate-500 font-bold block">Embarcados</span>
+                            <strong id="txtResumoEmbarqueCard" class="text-sky-700 font-extrabold">0 / 0</strong>
+                        </div>
+                        <div class="bg-white/90 p-2 rounded-xl border border-sky-100">
+                            <span class="text-[10px] text-slate-500 font-bold block">KM Percorrido</span>
+                            <strong id="txtResumoKmCard" class="text-emerald-700 font-extrabold">Pendente</strong>
+                        </div>
+                    </div>
+
+                    <!-- Botão de Simulação para Teste se não houver viagem agendada hoje -->
+                    <div id="boxSemMissaoHoje" class="hidden mt-3 pt-3 border-t border-sky-200/70 flex items-center justify-between gap-2">
+                        <span class="text-[11px] text-sky-900 font-semibold">Deseja testar uma viagem completa agora?</span>
+                        <button type="button" onclick="carregarMissaoDemonstracao()" class="bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-[11px] px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 shrink-0 shadow-sm">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.3" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span>Simular Viagem</span>
+                        </button>
+                    </div>
+
+                    <!-- Botão de Ver Comprovante (Aparece quando a viagem foi concluída) -->
+                    <div id="boxBtnVerComprovanteCard" class="hidden mt-3 pt-3 border-t border-sky-200/70">
+                        <button type="button" onclick="abrirModalComprovante()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            <span>Emitir Comprovante Oficial da Viagem</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- MENSAGEM DE STATUS DO GPS / ALERTA -->
+                <div id="boxStatusGps" class="hidden text-xs p-3 rounded-xl border flex items-center gap-2 font-semibold"></div>
+
+                <!-- LINHA DO TEMPO COM OS 3 PONTOS DE GPS SATELITAL + VISTORIA + KM -->
+                <div class="bg-white border border-slate-200 rounded-2xl p-4 space-y-4 shadow-sm">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                        <div class="flex items-center gap-2">
+                            <div class="w-7 h-7 rounded-lg bg-sky-50 text-sky-600 border border-sky-100 flex items-center justify-center">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"/>
+                                </svg>
+                            </div>
+                            <h4 class="text-xs font-extrabold uppercase text-slate-800 tracking-wider">Registro Satelital Anti-Fraude</h4>
+                        </div>
+                        <button type="button" onclick="testarSinalSateliteAtual()" class="text-[11px] font-bold text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 px-2.5 py-1 rounded-lg transition flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5 text-sky-600" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                            <span>Testar GPS</span>
+                        </button>
+                    </div>
+
+                    <!-- PASSO 1: VISTORIA RÁPIDA + KM INICIAL + SAÍDA DE ACARI -->
+                    <div class="flex items-start gap-3">
+                        <div id="stepDotSaida" class="step-dot bg-sky-50 text-sky-700 border-2 border-sky-500">
+                            1
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex justify-between items-center">
+                                <h5 class="text-xs font-extrabold text-slate-800">1. Saída de Acari</h5>
+                                <span id="txtHoraSaidaGps" class="text-[11px] font-bold text-slate-500">Pendente</span>
+                            </div>
+                            <p class="text-[11px] text-slate-500 mt-0.5">Confirmação de vistoria, KM de partida e GPS na sede municipal.</p>
+                            
+                            <div id="boxBtnSaida" class="mt-2.5 space-y-2.5">
+                                <!-- CHECKLIST RÁPIDO DO VEÍCULO -->
+                                <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5">
+                                    <span class="text-[10.5px] font-extrabold text-slate-700 uppercase tracking-wider block mb-1.5">Checklist Rápido da Viagem (Toque para marcar):</span>
+                                    <div class="grid grid-cols-2 gap-1.5">
+                                        <button type="button" onclick="alternarItemChecklist(this, 'combustivel')" class="check-item-btn flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1.5 rounded-lg border bg-emerald-50 border-emerald-200 text-emerald-800 transition">
+                                            <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                            <span>Combustível OK</span>
+                                        </button>
+                                        <button type="button" onclick="alternarItemChecklist(this, 'pneus')" class="check-item-btn flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1.5 rounded-lg border bg-emerald-50 border-emerald-200 text-emerald-800 transition">
+                                            <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                            <span>Pneus/Freios OK</span>
+                                        </button>
+                                        <button type="button" onclick="alternarItemChecklist(this, 'ar')" class="check-item-btn flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1.5 rounded-lg border bg-emerald-50 border-emerald-200 text-emerald-800 transition">
+                                            <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                            <span>Climatização OK</span>
+                                        </button>
+                                        <button type="button" onclick="alternarItemChecklist(this, 'limpeza')" class="check-item-btn flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1.5 rounded-lg border bg-emerald-50 border-emerald-200 text-emerald-800 transition">
+                                            <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                            <span>Luzes/Doc. OK</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- KM INICIAL -->
+                                <div class="relative">
+                                    <input type="number" id="inputKmSaida" inputmode="numeric" placeholder="Informe o KM Inicial no painel (ex: 125400)" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-800 focus:bg-white focus:border-sky-600 outline-none">
+                                </div>
+
+                                <button type="button" onclick="registrarPontoGps('SAIDA')" class="w-full bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white font-extrabold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                                    </svg>
+                                    <span>Registrar Saída de Acari</span>
+                                </button>
+                            </div>
+                            <div id="boxInfoSaida" class="hidden text-[10.5px] bg-slate-50 p-2.5 rounded-xl border border-slate-200 mt-2 text-slate-700 space-y-0.5"></div>
+                        </div>
+                    </div>
+
+                    <!-- PASSO 2: CHEGADA NO DESTINO -->
+                    <div class="flex items-start gap-3 pt-3 border-t border-slate-100">
+                        <div id="stepDotChegada" class="step-dot bg-slate-100 text-slate-400 border border-slate-300">
+                            2
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex justify-between items-center">
+                                <h5 class="text-xs font-extrabold text-slate-800">2. Chegada no Destino</h5>
+                                <span id="txtHoraChegadaGps" class="text-[11px] font-bold text-slate-500">Pendente</span>
+                            </div>
+                            <p class="text-[11px] text-slate-500 mt-0.5">Geofencing: Bloqueia se você não estiver na cidade destino.</p>
+                            
+                            <div id="boxBtnChegada" class="mt-2 opacity-50 pointer-events-none">
+                                <button type="button" onclick="registrarPontoGps('CHEGADA')" class="w-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-extrabold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    </svg>
+                                    <span>Confirmar Chegada no Destino</span>
+                                </button>
+                            </div>
+                            <div id="boxInfoChegada" class="hidden text-[10.5px] bg-slate-50 p-2.5 rounded-xl border border-slate-200 mt-2 text-slate-700 space-y-0.5"></div>
+                        </div>
+                    </div>
+
+                    <!-- PASSO 3: RETORNO A ACARI + KM FINAL -->
+                    <div class="flex items-start gap-3 pt-3 border-t border-slate-100">
+                        <div id="stepDotRetorno" class="step-dot bg-slate-100 text-slate-400 border border-slate-300">
+                            3
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex justify-between items-center">
+                                <h5 class="text-xs font-extrabold text-slate-800">3. Retorno a Acari (Encerramento)</h5>
+                                <span id="txtHoraRetornoGps" class="text-[11px] font-bold text-slate-500">Pendente</span>
+                            </div>
+                            <p class="text-[11px] text-slate-500 mt-0.5">Finalização da missão ao desembarcar todos em Acari.</p>
+                            
+                            <div id="boxBtnRetorno" class="mt-2 opacity-50 pointer-events-none space-y-2">
+                                <input type="number" id="inputKmRetorno" inputmode="numeric" oninput="calcularPreviaKmRodado()" placeholder="Informe o KM Final no painel (ex: 125840)" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-800 focus:bg-white focus:border-indigo-600 outline-none">
+                                <div id="txtCalculoKmPreview" class="hidden text-[11px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 rounded-lg"></div>
+                                <input type="text" id="inputObsViagem" placeholder="Alguma observação da viagem? (Opcional)" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-800 focus:bg-white focus:border-indigo-600 outline-none">
+                                <button type="button" onclick="registrarPontoGps('RETORNO')" class="w-full bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-extrabold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"/>
+                                    </svg>
+                                    <span>Confirmar Retorno a Acari</span>
+                                </button>
+                            </div>
+                            <div id="boxInfoRetorno" class="hidden text-[10.5px] bg-slate-50 p-2.5 rounded-xl border border-slate-200 mt-2 text-slate-700 space-y-0.5"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CARD DE ABASTECIMENTO E INTERCORRÊNCIAS NA ESTRADA -->
+                <div class="grid grid-cols-2 gap-2.5">
+                    <button type="button" onclick="abrirModalAbastecimento()" class="bg-white hover:bg-sky-50 border border-slate-200 rounded-2xl p-3 shadow-sm flex items-center gap-2.5 text-left transition">
+                        <div class="w-9 h-9 rounded-xl bg-sky-50 text-sky-600 border border-sky-100 flex items-center justify-center shrink-0">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <strong class="text-xs font-extrabold text-slate-800 block leading-tight">Abastecimento</strong>
+                            <span id="txtResumoAbastecimento" class="text-[10.5px] text-slate-500">Registrar cupom/litros</span>
+                        </div>
+                    </button>
+
+                    <button type="button" onclick="abrirModalSos()" class="bg-white hover:bg-rose-50 border border-slate-200 rounded-2xl p-3 shadow-sm flex items-center gap-2.5 text-left transition">
+                        <div class="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 border border-rose-100 flex items-center justify-center shrink-0">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <strong class="text-xs font-extrabold text-slate-800 block leading-tight">SOS / Alerta</strong>
+                            <span class="text-[10.5px] text-slate-500">Pane ou emergência</span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ==============================================
+                 CONTEÚDO ABA 2: MANIFESTO DE PASSAGEIROS (IDA E VOLTA)
+                 ============================================== -->
+            <div id="abaConteudoPassageiros" class="hidden p-4 space-y-3">
+                <div class="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-sm">
+                    <div class="flex justify-between items-center mb-2.5">
+                        <div>
+                            <h4 class="text-xs font-extrabold text-slate-900 uppercase tracking-wider">Passageiros Escalados</h4>
+                            <p class="text-[11px] text-slate-500">Controle de embarque na ida (Acari) e recolhimento na volta.</p>
+                        </div>
+                        <span id="badgeTotalEmbarque" class="text-xs font-extrabold bg-sky-100 text-sky-800 px-2.5 py-0.5 rounded-full">
+                            0 pacientes
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
+                        <div class="bg-sky-50/70 border border-sky-100 rounded-xl p-2 flex items-center justify-between">
+                            <span class="text-[10.5px] font-bold text-sky-900">Ida (Embarcados):</span>
+                            <strong id="txtContadorIda" class="text-sky-700 font-extrabold">0/0</strong>
+                        </div>
+                        <div class="bg-emerald-50/70 border border-emerald-100 rounded-xl p-2 flex items-center justify-between">
+                            <span class="text-[10.5px] font-bold text-emerald-900">Volta (Na Van):</span>
+                            <strong id="txtContadorVolta" class="text-emerald-700 font-extrabold">0/0</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="listaPassageirosCondutor" class="space-y-2.5">
+                    <div class="text-center py-8 text-xs text-slate-400">
+                        Nenhum passageiro localizado para esta viagem.
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==============================================
+                 CONTEÚDO ABA 3: CALENDÁRIO INTERATIVO + DIÁRIAS DO MÊS
+                 ============================================== -->
+            <div id="abaConteudoExtrato" class="hidden p-4 space-y-3.5">
+                
+                <!-- RESUMO FINANCEIRO DO MÊS -->
+                <div class="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-sm flex justify-between items-center">
+                    <div>
+                        <h4 class="text-xs font-extrabold text-slate-900 uppercase tracking-wider">Calendário & Diárias</h4>
+                        <p class="text-[11px] text-slate-500">Toque em um dia marcado para ver os detalhes da viagem.</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-[10px] text-slate-400 font-bold uppercase block">Total Acumulado</span>
+                        <strong id="txtSomaDiariasMes" class="text-sm font-extrabold text-emerald-700">R$ 0,00</strong>
+                    </div>
+                </div>
+
+                <!-- CALENDÁRIO MENSAL INTERATIVO DE VIAGENS -->
+                <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+                    <div class="flex items-center justify-between mb-3">
+                        <button type="button" onclick="mudarMesCalendario(-1)" class="p-1.5 rounded-xl bg-slate-100 hover:bg-sky-50 text-slate-700 hover:text-sky-700 transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                        </button>
+                        <div class="text-center">
+                            <strong id="txtMesAnoCalendario" class="text-xs font-extrabold uppercase tracking-wider text-slate-900">Mês / Ano</strong>
+                        </div>
+                        <button type="button" onclick="mudarMesCalendario(1)" class="p-1.5 rounded-xl bg-slate-100 hover:bg-sky-50 text-slate-700 hover:text-sky-700 transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                        </button>
+                    </div>
+
+                    <!-- Cabeçalho dos Dias da Semana -->
+                    <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-extrabold text-slate-400 uppercase pb-1.5 border-b border-slate-100">
+                        <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div>
+                    </div>
+
+                    <!-- Grade de Dias do Mês -->
+                    <div id="gridDiasCalendario" class="grid grid-cols-7 gap-1.5 pt-2 text-center"></div>
+
+                    <!-- Legenda do Calendário -->
+                    <div class="flex items-center justify-between pt-3 mt-3 border-t border-slate-100 text-[10px] font-bold text-slate-500">
+                        <div class="flex items-center gap-3">
+                            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> Concluída</span>
+                            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-sky-500 inline-block"></span> Em Aberto</span>
+                        </div>
+                        <button type="button" id="btnLimparFiltroData" onclick="selecionarDataCalendario(null)" class="hidden text-sky-600 font-extrabold hover:underline">
+                            Ver todas do mês
+                        </button>
+                    </div>
+                </div>
+
+                <!-- DETALHES DA VIAGEM DO DIA SELECIONADO OU LISTA DO MÊS -->
+                <div id="boxTituloListaExtrato" class="flex items-center justify-between px-1">
+                    <span id="txtSubtituloListaExtrato" class="text-[11px] font-extrabold uppercase tracking-wider text-slate-600">Todas as viagens registradas</span>
+                </div>
+
+                <div id="listaExtratoDiarias" class="space-y-2.5">
+                    <div class="text-center py-8 text-xs text-slate-400">
+                        Carregando histórico...
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================================
+                 BARRA DE NAVEGAÇÃO INFERIOR ESTILO APP NATIVO
+                 ======================================================== -->
+            <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[520px] bg-white border-t border-slate-200 bottom-nav-shadow z-30 flex justify-around items-center py-1.5 px-2">
+                <button type="button" id="tabBtnMissao" onclick="trocarAbaCondutor('missao')" class="flex-1 flex flex-col items-center justify-center py-1.5 rounded-xl text-sky-700 bg-sky-50 font-extrabold transition">
+                    <svg class="w-5 h-5 mb-0.5 text-sky-600" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    <span class="text-[11px]">Minha Viagem</span>
+                </button>
+
+                <button type="button" id="tabBtnPassageiros" onclick="trocarAbaCondutor('passageiros')" class="flex-1 flex flex-col items-center justify-center py-1.5 rounded-xl text-slate-500 font-bold hover:text-slate-900 transition relative">
+                    <div class="relative">
+                        <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        <span id="badgeQtdPacientes" class="absolute -top-1.5 -right-3.5 bg-sky-600 text-white text-[9.5px] font-extrabold px-1.5 py-0.2 rounded-full">0</span>
+                    </div>
+                    <span class="text-[11px]">Passageiros</span>
+                </button>
+
+                <button type="button" id="tabBtnExtrato" onclick="trocarAbaCondutor('extrato')" class="flex-1 flex flex-col items-center justify-center py-1.5 rounded-xl text-slate-500 font-bold hover:text-slate-900 transition">
+                    <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    <span class="text-[11px]">Calendário & Diárias</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- ========================================================
+             MODAL 1: COMPROVANTE DIGITAL OFICIAL DA VIAGEM / DIÁRIA
+             ======================================================== -->
+        <div id="modalComprovante" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+            <div class="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-5 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
+                <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+                    <div class="flex items-center gap-2.5">
+                        <img src="logo_icone.png" alt="RegulaGov" class="h-7 w-auto object-contain">
+                        <div class="border-l border-slate-200 pl-2">
+                            <h3 class="text-xs font-extrabold text-slate-900">Comprovante de Viagem TFD</h3>
+                            <p class="text-[10px] text-slate-500">Prefeitura Municipal de Acari/RN</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="fecharModalComprovante()" class="no-print text-slate-400 hover:text-slate-700 p-1">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+
+                <div id="corpoComprovanteHtml" class="space-y-3 text-xs text-slate-700"></div>
+
+                <div class="no-print grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
+                    <button type="button" onclick="compartilharComprovanteWhatsApp()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm transition">
+                        <span>Enviar WhatsApp</span>
+                    </button>
+                    <button type="button" onclick="window.print()" class="bg-sky-600 hover:bg-sky-700 text-white font-extrabold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm transition">
+                        <span>Salvar PDF / Imprimir</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================================
+             MODAL 2: REGISTRO DE ABASTECIMENTO NA VIAGEM
+             ======================================================== -->
+        <div id="modalAbastecimento" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+            <div class="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-5 shadow-xl space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 bg-sky-50 text-sky-600 border border-sky-100 rounded-xl flex items-center justify-center">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-sm font-extrabold text-slate-900">Registrar Abastecimento em Rota</h3>
+                    </div>
+                    <button type="button" onclick="fecharModalAbastecimento()" class="text-slate-400 hover:text-slate-700 p-1">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+
+                <form onsubmit="salvarAbastecimentoViagem(event)" class="space-y-3 text-xs">
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <label class="font-bold text-slate-700 block mb-1">Litros Abastecidos:</label>
+                            <input type="number" step="0.01" id="inputLitrosAbast" required placeholder="Ex: 45.5" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-800 outline-none focus:border-sky-600">
+                        </div>
+                        <div>
+                            <label class="font-bold text-slate-700 block mb-1">Valor Total (R$):</label>
+                            <input type="number" step="0.01" id="inputValorAbast" required placeholder="Ex: 280.00" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-800 outline-none focus:border-sky-600">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <label class="font-bold text-slate-700 block mb-1">KM no Painel:</label>
+                            <input type="number" id="inputKmAbast" placeholder="Ex: 125610" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-800 outline-none focus:border-sky-600">
+                        </div>
+                        <div>
+                            <label class="font-bold text-slate-700 block mb-1">Posto / Nº Cupom:</label>
+                            <input type="text" id="inputPostoAbast" placeholder="Posto / Nota Fiscal" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-semibold text-slate-800 outline-none focus:border-sky-600">
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-extrabold py-2.5 px-4 rounded-xl shadow-sm transition">
+                        Salvar Abastecimento na Viagem
+                    </button>
+                </form>
+
+                <div id="listaAbastecimentosSalvos" class="space-y-1.5 pt-2 border-t border-slate-100 text-[11px]"></div>
+            </div>
+        </div>
+
+        <!-- ========================================================
+             MODAL 3: BOTÃO SOS / INTERCORRÊNCIA NA ESTRADA COM GPS
+             ======================================================== -->
+        <div id="modalSos" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+            <div class="bg-white border border-rose-200 rounded-2xl max-w-md w-full p-5 shadow-xl space-y-4">
+                <div class="flex items-center justify-between border-b border-rose-100 pb-3">
+                    <div class="flex items-center gap-2">
+                        <div class="w-9 h-9 bg-rose-600 text-white rounded-xl flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.3" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-extrabold text-rose-900">Acionar SOS / Relatar Intercorrência</h3>
+                            <p class="text-[10.5px] text-rose-600 font-medium">Envia sua localização GPS exata na estrada para a Regulação</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="fecharModalSos()" class="text-slate-400 hover:text-slate-700 p-1">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+
+                <div class="space-y-3 text-xs">
+                    <div>
+                        <label class="font-bold text-slate-700 block mb-1">Tipo de Ocorrência:</label>
+                        <select id="selTipoSos" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-800 outline-none focus:border-rose-600">
+                            <option value="PANE MECÂNICA / PNEU NA ESTRADA">Pane Mecânica / Pneu Furado na Estrada</option>
+                            <option value="INTERCORRÊNCIA MÉDICA COM PACIENTE">Paciente Passando Mal / Emergência Médica</option>
+                            <option value="ATRASO EM HOSPITAL / PROCEDIMENTO">Atraso na Liberação de Paciente em Hospital</option>
+                            <option value="ACIDENTE / BLOQUEIO NA RODOVIA">Acidente ou Bloqueio na Rodovia</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="font-bold text-slate-700 block mb-1">Detalhes Rápidos (Opcional):</label>
+                        <input type="text" id="inputDetalheSos" placeholder="Ex: Parado próximo a Santa Cruz na BR-226" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-800 outline-none focus:border-rose-600">
+                    </div>
+
+                    <button type="button" onclick="dispararAlertaSosGps()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-extrabold py-3 px-4 rounded-xl shadow-md shadow-rose-600/20 flex items-center justify-center gap-2 transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.3" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        <span>Capturar GPS Atual e Enviar SOS</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- SCRIPTS MODULARES DO CONDUTOR (LOGIN CPF + CALENDÁRIO INTERATIVO + FIREBASE) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, updateDoc, addDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD0Q-5OpW05WX6XWckB6ldBBcs2c99EIwY",
+            authDomain: "regulagov.firebaseapp.com",
+            projectId: "regulagov",
+            storageBucket: "regulagov.firebasestorage.app",
+            messagingSenderId: "983113149443",
+            appId: "1:983113149443:web:e6566f221e0d91af65f236",
+            measurementId: "G-QP41NGY6WN"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // COORDENADAS OFICIAIS DOS DESTINOS (GEOFENCING)
+        const COORDENADAS_DESTINOS = {
+            "ACARI": { lat: -6.4278, lon: -36.6342, raioKm: 18, nome: "Acari / Sede" },
+            "NATAL": { lat: -5.7945, lon: -35.2110, raioKm: 35, nome: "Grande Natal" },
+            "PARNAMIRIM": { lat: -5.9156, lon: -35.2628, raioKm: 25, nome: "Parnamirim" },
+            "CAICÓ": { lat: -6.4586, lon: -37.0981, raioKm: 22, nome: "Caicó" },
+            "CAICO": { lat: -6.4586, lon: -37.0981, raioKm: 22, nome: "Caicó" },
+            "CURRAIS NOVOS": { lat: -6.2608, lon: -36.5144, raioKm: 18, nome: "Currais Novos" },
+            "PARELHAS": { lat: -6.6908, lon: -36.6578, raioKm: 18, nome: "Parelhas" },
+            "SANTA CRUZ": { lat: -6.2294, lon: -36.0228, raioKm: 20, nome: "Santa Cruz" },
+            "MOSSORÓ": { lat: -5.1878, lon: -37.3442, raioKm: 30, nome: "Mossoró" }
+        };
+
+        const SVG_CHECK = `<svg class="w-4 h-4 inline-block" fill="none" stroke="currentColor" stroke-width="2.6" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>`;
+        const SVG_PIN = `<svg class="w-5 h-5 inline-block text-sky-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>`;
+        const SVG_WHATSAPP = `<svg class="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>`;
+
+        let listaMotoristasBanco = [];
+        let condutorEmLogin = null;
+        let cpfEmLoginLimpo = "";
+        let motoristaAtivo = null;
+        let viagemAtiva = null;
+        let viagemComprovanteAlvo = null;
+        let listaPassageiros = [];
+        let listaHistorico = [];
+        let modoSimulacaoTeste = false;
+
+        // VARIÁVEIS DO CALENDÁRIO INTERATIVO
+        const dataAtualRef = new Date();
+        let calMesAtual = dataAtualRef.getMonth();
+        let calAnoAtual = dataAtualRef.getFullYear();
+        let calDataSelecionadaISO = null;
+
+        let estadoChecklist = {
+            combustivel: true,
+            pneus: true,
+            ar: true,
+            limpeza: true
+        };
+
+        function vibrarConfirmacao(padrao = [40]) {
+            try {
+                if (navigator.vibrate) navigator.vibrate(padrao);
+            } catch (e) {}
+        }
+
+        function atualizarStatusRede() {
+            const badge = document.getElementById('badgeConexao');
+            const dot = document.getElementById('dotConexao');
+            const txt = document.getElementById('txtConexao');
+            if (navigator.onLine) {
+                badge.className = "flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full";
+                dot.className = "w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse";
+                txt.innerText = "GPS Satélite";
+                sincronizarFilaOffline();
+            } else {
+                badge.className = "flex items-center gap-1.5 text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full";
+                dot.className = "w-2 h-2 rounded-full bg-amber-500 inline-block";
+                txt.innerText = "Modo Offline";
+            }
+        }
+        window.addEventListener('online', atualizarStatusRede);
+        window.addEventListener('offline', atualizarStatusRede);
+
+        function calcularDistanciaKm(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        // ========================================================
+        // MÁSCARA E LOGIN POR CPF + CRIAÇÃO DA 1ª SENHA
+        // ========================================================
+        window.aplicarMascaraCpf = function(input) {
+            let v = input.value.replace(/\D/g, '');
+            if (v.length > 11) v = v.slice(0, 11);
+            if (v.length > 9) {
+                v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, "$1.$2.$3-$4");
+            } else if (v.length > 6) {
+                v = v.replace(/(\d{3})(\d{3})(\d{1,3})/, "$1.$2.$3");
+            } else if (v.length > 3) {
+                v = v.replace(/(\d{3})(\d{1,3})/, "$1.$2");
+            }
+            input.value = v;
+        };
+
+        function formatarCpfExibicao(cpfLimpo) {
+            const c = (cpfLimpo || '').replace(/\D/g, '').padStart(11, '0');
+            return c.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+        }
+
+        async function carregarListaCondutores() {
+            atualizarStatusRede();
+            const padrao = [
+                { id: "padrao_1", nome: "FRANCISCO CANINDÉ", cnh: "Cat D" },
+                { id: "padrao_2", nome: "JOSÉ ERIVAN", cnh: "Cat D" },
+                { id: "padrao_3", nome: "MARCOS ANTÔNIO", cnh: "Cat D" },
+                { id: "padrao_4", nome: "MANOEL MESSIAS", cnh: "Cat D" },
+                { id: "padrao_5", nome: "RAIMUNDO NONATO", cnh: "Cat D" }
+            ];
+
+            try {
+                const snap = await getDocs(collection(db, "frota_motoristas"));
+                if (!snap.empty) {
+                    listaMotoristasBanco = [];
+                    snap.forEach(d => {
+                        listaMotoristasBanco.push({ id: d.id, ...d.data() });
+                    });
+                    localStorage.setItem('regulagov_cache_motoristas', JSON.stringify(listaMotoristasBanco));
+                } else {
+                    listaMotoristasBanco = padrao;
+                }
+            } catch(e) {
+                const cache = JSON.parse(localStorage.getItem('regulagov_cache_motoristas') || '[]');
+                listaMotoristasBanco = cache.length > 0 ? cache : padrao;
+            }
+
+            // Preencher select auxiliar de vínculo caso algum motorista antigo ainda não tenha CPF gravado no banco
+            const selVinc = document.getElementById('selVincularMotoristaCpf');
+            if (selVinc) {
+                selVinc.innerHTML = '<option value="">-- Selecione seu Nome na Frota --</option>';
+                listaMotoristasBanco.forEach(m => {
+                    selVinc.innerHTML += `<option value="${m.id}">${m.nome}</option>`;
+                });
+            }
+
+            // Restaurar sessão se já estiver logado neste aparelho
+            const salvo = localStorage.getItem('regulagov_condutor_ativo');
+            if (salvo) {
+                iniciarSessaoCondutor(salvo);
+            }
+        }
+
+        window.verificarCpfCondutor = function(e) {
+            e.preventDefault();
+            const cpfInput = document.getElementById('inputCpfLogin').value;
+            const cpfLimpo = cpfInput.replace(/\D/g, '');
+
+            if (cpfLimpo.length !== 11) {
+                alert("Por favor, digite os 11 números do seu CPF.");
+                return;
+            }
+
+            cpfEmLoginLimpo = cpfLimpo;
+
+            // Verificar no banco se já existe motorista com esse CPF (ou no armazenamento local de senhas criadas)
+            const senhasLocais = JSON.parse(localStorage.getItem('regulagov_senhas_cpf') || '{}');
+            const encontradoBanco = listaMotoristasBanco.find(m => (m.cpf || '').replace(/\D/g, '') === cpfLimpo);
+
+            condutorEmLogin = encontradoBanco || senhasLocais[cpfLimpo] || null;
+
+            document.getElementById('formEtapaCpf').classList.add('hidden');
+
+            // Se já tem senha cadastrada no Firebase ("senhaApp") ou localmente
+            const senhaCadastrada = condutorEmLogin?.senhaApp || senhasLocais[cpfLimpo]?.senhaApp || null;
+
+            if (condutorEmLogin && senhaCadastrada) {
+                document.getElementById('txtNomeCondutorLogin').innerText = condutorEmLogin.nome;
+                document.getElementById('txtCpfCondutorLogin').innerText = `CPF: ${formatarCpfExibicao(cpfLimpo)}`;
+                document.getElementById('formEtapaSenhaExistente').classList.remove('hidden');
+                document.getElementById('inputSenhaExistente').focus();
+            } else {
+                // 1º ACESSO: O PRÓPRIO MOTORISTA DEFINE SUA SENHA!
+                document.getElementById('formEtapaCriarSenha').classList.remove('hidden');
+                if (condutorEmLogin && condutorEmLogin.nome) {
+                    document.getElementById('txtBoasVindasPrimeiroAcesso').innerText = `Olá, ${condutorEmLogin.nome}!`;
+                    document.getElementById('boxVincularNomePrimeiroAcesso').classList.add('hidden');
+                } else {
+                    document.getElementById('txtBoasVindasPrimeiroAcesso').innerText = `CPF ${formatarCpfExibicao(cpfLimpo)} — 1º Acesso`;
+                    document.getElementById('boxVincularNomePrimeiroAcesso').classList.remove('hidden');
+                }
+                document.getElementById('inputNovaSenha1').focus();
+            }
+        };
+
+        window.voltarParaEtapaCpf = function() {
+            document.getElementById('formEtapaSenhaExistente').classList.add('hidden');
+            document.getElementById('formEtapaCriarSenha').classList.add('hidden');
+            document.getElementById('formEtapaCpf').classList.remove('hidden');
+        };
+
+        window.confirmarLoginComSenha = function(e) {
+            e.preventDefault();
+            const senhaDigitada = document.getElementById('inputSenhaExistente').value;
+            const senhasLocais = JSON.parse(localStorage.getItem('regulagov_senhas_cpf') || '{}');
+            const senhaCorreta = condutorEmLogin?.senhaApp || senhasLocais[cpfEmLoginLimpo]?.senhaApp;
+
+            if (senhaDigitada !== senhaCorreta) {
+                alert("Senha incorreta! Tente novamente ou solicite o reset de senha na Secretaria de Saúde.");
+                return;
+            }
+
+            vibrarConfirmacao([35]);
+            iniciarSessaoCondutor(condutorEmLogin.nome);
+        };
+
+        window.salvarPrimeiraSenhaCondutor = async function(e) {
+            e.preventDefault();
+            const s1 = document.getElementById('inputNovaSenha1').value;
+            const s2 = document.getElementById('inputNovaSenha2').value;
+
+            if (s1.length < 4) {
+                alert("A senha deve ter pelo menos 4 caracteres.");
+                return;
+            }
+            if (s1 !== s2) {
+                alert("As senhas digitadas não conferem. Digite novamente.");
+                return;
+            }
+
+            let docIdAlvo = condutorEmLogin?.id || null;
+            let nomeAlvo = condutorEmLogin?.nome || null;
+
+            if (!nomeAlvo) {
+                const idSel = document.getElementById('selVincularMotoristaCpf').value;
+                const motSel = listaMotoristasBanco.find(m => m.id === idSel);
+                if (!motSel) {
+                    alert("Por favor, selecione seu nome na lista da frota para vincular ao seu CPF.");
+                    return;
+                }
+                docIdAlvo = motSel.id;
+                nomeAlvo = motSel.nome;
+            }
+
+            // Salvar no Firebase em frota_motoristas (vinculando CPF + senhaApp definida pelo condutor)
+            if (docIdAlvo && !docIdAlvo.startsWith('padrao_')) {
+                try {
+                    await updateDoc(doc(db, "frota_motoristas", docIdAlvo), {
+                        cpf: cpfEmLoginLimpo,
+                        senhaApp: s1,
+                        dataCadastroSenha: new Date().toISOString()
+                    });
+                } catch (err) {
+                    console.warn("Salvo localmente (modo offline):", err);
+                }
+            }
+
+            // Guardar espelho local no celular para acesso rápido
+            const senhasLocais = JSON.parse(localStorage.getItem('regulagov_senhas_cpf') || '{}');
+            senhasLocais[cpfEmLoginLimpo] = {
+                id: docIdAlvo,
+                nome: nomeAlvo,
+                cpf: cpfEmLoginLimpo,
+                senhaApp: s1
+            };
+            localStorage.setItem('regulagov_senhas_cpf', JSON.stringify(senhasLocais));
+
+            vibrarConfirmacao([50, 40, 80]);
+            iniciarSessaoCondutor(nomeAlvo);
+        };
+
+        async function iniciarSessaoCondutor(nome) {
+            motoristaAtivo = nome;
+            localStorage.setItem('regulagov_condutor_ativo', nome);
+
+            document.getElementById('telaIdentificacao').classList.add('hidden');
+            document.getElementById('telaMissao').classList.remove('hidden');
+            document.getElementById('btnSairMotorista').classList.remove('hidden');
+            document.getElementById('btnSosTopo').classList.remove('hidden');
+            document.getElementById('btnSosTopo').classList.add('flex');
+
+            document.getElementById('txtNomeCondutor').innerText = nome;
+            const hoje = new Date();
+            const dataFmt = `${String(hoje.getDate()).padStart(2,'0')}/${String(hoje.getMonth()+1).padStart(2,'0')}/${hoje.getFullYear()}`;
+            document.getElementById('txtDataHoje').innerText = dataFmt;
+
+            await carregarMissaoDoDia(nome);
+            await carregarExtratoDiarias(nome);
+        }
+
+        window.fazerLogoutMotorista = function() {
+            if (!confirm("Deseja desconectar seu perfil deste celular?")) return;
+            localStorage.removeItem('regulagov_condutor_ativo');
+            location.reload();
+        };
+
+        // ========================================================
+        // CHECKLIST E CÁLCULO DE KM
+        // ========================================================
+        window.alternarItemChecklist = function(btn, chave) {
+            vibrarConfirmacao([25]);
+            estadoChecklist[chave] = !estadoChecklist[chave];
+
+            const labels = {
+                combustivel: ['Combustível OK', 'Combustível Baixo'],
+                pneus: ['Pneus/Freios OK', 'Revisar Pneus/Freio'],
+                ar: ['Climatização OK', 'Ar c/ Defeito'],
+                limpeza: ['Luzes/Doc. OK', 'Pendência Doc/Luz']
+            };
+
+            if (estadoChecklist[chave]) {
+                btn.className = "check-item-btn flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1.5 rounded-lg border bg-emerald-50 border-emerald-200 text-emerald-800 transition";
+                btn.innerHTML = `
+                    <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                    <span>${labels[chave][0]}</span>
+                `;
+            } else {
+                btn.className = "check-item-btn flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1.5 rounded-lg border bg-amber-50 border-amber-300 text-amber-900 transition";
+                btn.innerHTML = `
+                    <svg class="w-3.5 h-3.5 text-amber-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    <span>${labels[chave][1]}</span>
+                `;
+            }
+        };
+
+        window.calcularPreviaKmRodado = function() {
+            const kmIni = parseFloat(viagemAtiva?.kmSaida || document.getElementById('inputKmSaida')?.value || 0);
+            const kmFim = parseFloat(document.getElementById('inputKmRetorno')?.value || 0);
+            const boxPreview = document.getElementById('txtCalculoKmPreview');
+
+            if (kmIni > 0 && kmFim > kmIni) {
+                const rodado = kmFim - kmIni;
+                boxPreview.classList.remove('hidden');
+                boxPreview.innerText = `Distância Total Percorrida nesta Viagem: ${rodado} km`;
+            } else {
+                boxPreview.classList.add('hidden');
+            }
+        };
+
+        // CARREGAR A VIAGEM DO DIA PARA O CONDUTOR
+        async function carregarMissaoDoDia(nomeMotorista) {
+            const hojeISO = new Date().toISOString().split('T')[0];
+            viagemAtiva = null;
+            modoSimulacaoTeste = false;
+
+            try {
+                const snapDiarias = await getDocs(collection(db, "diarias_motoristas"));
+                let diariaEncontrada = null;
+                snapDiarias.forEach(d => {
+                    const item = { id: d.id, ...d.data() };
+                    if (item.motorista && item.motorista.toUpperCase().trim() === nomeMotorista.toUpperCase().trim() && item.data === hojeISO) {
+                        diariaEncontrada = item;
+                    }
+                });
+
+                if (!diariaEncontrada) {
+                    snapDiarias.forEach(d => {
+                        const item = { id: d.id, ...d.data() };
+                        if (item.motorista && item.motorista.toUpperCase().trim() === nomeMotorista.toUpperCase().trim() && item.status !== 'LIQUIDADO') {
+                            diariaEncontrada = item;
+                        }
+                    });
+                }
+
+                const snapViagens = await getDocs(collection(db, "tfd_viagens"));
+                const todosPassageirosData = [];
+                snapViagens.forEach(d => {
+                    const v = { id: d.id, ...d.data() };
+                    if (v.data === (diariaEncontrada?.data || hojeISO)) {
+                        todosPassageirosData.push(v);
+                    }
+                });
+
+                // Filtrar passageiros vinculados especificamente a este motorista ou ao mesmo Destino/Horário da viagem encaminhada
+                listaPassageiros = todosPassageirosData.filter(v => {
+                    if (v.motorista && v.motorista.toUpperCase().trim() === nomeMotorista.toUpperCase().trim()) {
+                        return true;
+                    }
+                    if (!v.motorista && diariaEncontrada && diariaEncontrada.destino) {
+                        const mesmoDestino = (v.destino || '').toUpperCase().trim() === diariaEncontrada.destino.toUpperCase().trim();
+                        if (!mesmoDestino) return false;
+                        if (diariaEncontrada.horaSaida && v.hora && v.hora.trim() !== '' && diariaEncontrada.horaSaida.trim() !== '') {
+                            return v.hora.trim() === diariaEncontrada.horaSaida.trim();
+                        }
+                        return true;
+                    }
+                    return false;
+                });
+
+                // Caso nenhum motorista tenha diária formalizada ainda mas tenha sido escalado direto em tfd_viagens
+                if (!diariaEncontrada && listaPassageiros.length === 0) {
+                    listaPassageiros = todosPassageirosData.filter(v =>
+                        v.motorista && v.motorista.toUpperCase().trim() === nomeMotorista.toUpperCase().trim()
+                    );
+                }
+
+                if (diariaEncontrada) {
+                    viagemAtiva = diariaEncontrada;
+                    document.getElementById('boxSemMissaoHoje').classList.add('hidden');
+                    renderizarDadosMissao(diariaEncontrada);
+                } else if (listaPassageiros.length > 0) {
+                    viagemAtiva = {
+                        id: 'tfd_' + hojeISO,
+                        data: hojeISO,
+                        destino: listaPassageiros[0].destino || 'NATAL',
+                        veiculo: listaPassageiros[0].tipoTransporte || 'Van Oficial',
+                        horaSaida: listaPassageiros[0].hora || '03:00',
+                        valor: 0,
+                        status: 'CONVOCADO'
+                    };
+                    document.getElementById('boxSemMissaoHoje').classList.add('hidden');
+                    renderizarDadosMissao(viagemAtiva);
+                } else {
+                    document.getElementById('txtDestinoMissao').innerHTML = `${SVG_PIN} <span>Nenhuma viagem escalada hoje</span>`;
+                    document.getElementById('txtVeiculoMissao').innerText = "Você não possui viagens agendadas para esta data.";
+                    document.getElementById('txtValorDiaria').innerText = "Sem diária ativa";
+                    document.getElementById('boxSemMissaoHoje').classList.remove('hidden');
+                }
+
+                renderizarPassageiros();
+            } catch(e) {
+                console.warn("Erro ao carregar dados do condutor:", e);
+                document.getElementById('boxSemMissaoHoje').classList.remove('hidden');
+            }
+        }
+
+        // MODO SIMULAÇÃO PARA TESTE COMPLETO (INCLUI DADOS NO CALENDÁRIO)
+        window.carregarMissaoDemonstracao = function() {
+            vibrarConfirmacao([40]);
+            modoSimulacaoTeste = true;
+            const hoje = new Date();
+            const hojeISO = hoje.toISOString().split('T')[0];
+
+            viagemAtiva = {
+                id: 'demo_' + hojeISO,
+                motorista: motoristaAtivo,
+                data: hojeISO,
+                destino: 'NATAL',
+                veiculo: 'Sprinter TFD 01 (Placa QGZ-4A12)',
+                tipoDiaria: 'Diária Intermunicipal',
+                horaSaida: '03:00',
+                valor: 150.00,
+                status: 'CONVOCADO',
+                abastecimentos: []
+            };
+
+            listaPassageiros = [
+                {
+                    id: 'pac_demo_1',
+                    nomePaciente: 'MARIA DAS GRAÇAS SILVA',
+                    temAcomp: 'Sim',
+                    nomeAcomp: 'JOÃO BATISTA SILVA',
+                    embarque: 'Praça da Matriz (Sede)',
+                    clinica: 'Liga Contra o Câncer - Natal',
+                    tel: '84999112233',
+                    statusEmbarque: 'PENDENTE',
+                    recolhidoVolta: false
+                },
+                {
+                    id: 'pac_demo_2',
+                    nomePaciente: 'ANTÔNIO FERREIRA DANTAS',
+                    temAcomp: 'Não',
+                    embarque: 'UBS Ary Pinheiro',
+                    clinica: 'Hospital Universitário Onofre Lopes (HUOL)',
+                    tel: '84998223344',
+                    statusEmbarque: 'PENDENTE',
+                    recolhidoVolta: false
+                },
+                {
+                    id: 'pac_demo_3',
+                    nomePaciente: 'TEREZINHA MEDEIROS DE ARAÚJO',
+                    temAcomp: 'Sim',
+                    nomeAcomp: 'ANA PAULA MEDEIROS',
+                    embarque: 'Praça da Matriz (Sede)',
+                    clinica: 'Hospital Rio Grande',
+                    tel: '84996334455',
+                    statusEmbarque: 'PENDENTE',
+                    recolhidoVolta: false
+                }
+            ];
+
+            // Adicionar viagens demonstrativas no mês atual para o calendário ficar rico se ainda estiver vazio
+            if (listaHistorico.length === 0) {
+                const anoMes = hojeISO.slice(0, 7);
+                listaHistorico = [
+                    viagemAtiva,
+                    {
+                        id: 'demo_hist_1',
+                        motorista: motoristaAtivo,
+                        data: `${anoMes}-05`,
+                        destino: 'NATAL',
+                        veiculo: 'Sprinter TFD 01',
+                        tipoDiaria: 'Diária Integral',
+                        valor: 150.00,
+                        status: 'LIQUIDADO',
+                        kmSaida: '124100',
+                        kmRetorno: '124540',
+                        geoSaida: { hora: '03:05', lat: -6.4278, lon: -36.6342, precisao: 12 },
+                        geoChegada: { hora: '06:40', lat: -5.7945, lon: -35.2110, precisao: 15 },
+                        geoRetorno: { hora: '16:20', lat: -6.4278, lon: -36.6342, precisao: 11 }
+                    },
+                    {
+                        id: 'demo_hist_2',
+                        motorista: motoristaAtivo,
+                        data: `${anoMes}-11`,
+                        destino: 'CAICÓ',
+                        veiculo: 'Spin Saúde 02',
+                        tipoDiaria: 'Meia Diária Regional',
+                        valor: 80.00,
+                        status: 'LIQUIDADO',
+                        kmSaida: '68200',
+                        kmRetorno: '68360',
+                        geoSaida: { hora: '06:00', lat: -6.4278, lon: -36.6342, precisao: 10 },
+                        geoChegada: { hora: '07:15', lat: -6.4586, lon: -37.0981, precisao: 14 },
+                        geoRetorno: { hora: '13:10', lat: -6.4278, lon: -36.6342, precisao: 10 }
+                    }
+                ];
+                atualizarCalendarioEListaExtrato();
+            }
+
+            document.getElementById('boxSemMissaoHoje').classList.add('hidden');
+            renderizarDadosMissao(viagemAtiva);
+            renderizarPassageiros();
+            exibirAvisoGps("info", "Viagem de teste carregada! Experimente também a aba 'Calendário & Diárias' para ver os dias viajados no calendário.");
+        };
+
+        function renderizarDadosMissao(v) {
+            document.getElementById('txtDestinoMissao').innerHTML = `${SVG_PIN} <span>${v.destino}</span>`;
+            document.getElementById('txtVeiculoMissao').innerText = `${v.veiculo || 'Van Oficial'} • Acari ➔ ${v.destino}`;
+            document.getElementById('txtHoraPrevista').innerText = (v.horaSaida || '03:00') + 'h';
+            document.getElementById('txtValorDiaria').innerText = v.valor ? `Diária: R$ ${parseFloat(v.valor).toFixed(2).replace('.', ',')}` : 'Diária Municipal';
+
+            atualizarCardKmRodado(v);
+            atualizarResumoAbastecimentoCard(v);
+
+            if (v.geoSaida) {
+                aplicarEstiloPontoGravado('Saida', v.geoSaida, v.kmSaida, null, v.checklistSaida);
+                document.getElementById('boxBtnChegada').classList.remove('opacity-50', 'pointer-events-none');
+                document.getElementById('badgeStatusMissao').innerText = "Em Trânsito";
+                document.getElementById('badgeStatusMissao').className = "text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-sky-100 text-sky-800 border border-sky-200 inline-block";
+            }
+            if (v.geoChegada) {
+                aplicarEstiloPontoGravado('Chegada', v.geoChegada);
+                document.getElementById('boxBtnRetorno').classList.remove('opacity-50', 'pointer-events-none');
+                document.getElementById('badgeStatusMissao').innerText = "No Destino";
+            }
+            if (v.geoRetorno) {
+                aplicarEstiloPontoGravado('Retorno', v.geoRetorno, v.kmRetorno, v.obsViagem);
+                document.getElementById('badgeStatusMissao').innerText = "Missão Concluída";
+                document.getElementById('badgeStatusMissao').className = "text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 inline-block";
+                document.getElementById('boxBtnVerComprovanteCard').classList.remove('hidden');
+            }
+        }
+
+        function atualizarCardKmRodado(v) {
+            const el = document.getElementById('txtResumoKmCard');
+            if (!el) return;
+            const ini = parseFloat(v?.kmSaida || 0);
+            const fim = parseFloat(v?.kmRetorno || 0);
+            if (ini > 0 && fim > ini) {
+                el.innerText = `${fim - ini} km (${ini}➔${fim})`;
+            } else if (ini > 0) {
+                el.innerText = `Saída: ${ini} km`;
+            } else {
+                el.innerText = "Pendente";
+            }
+        }
+
+        function aplicarEstiloPontoGravado(etapa, geo, kmOpcional, obsOpcional, checklistOpcional) {
+            const dot = document.getElementById(`stepDot${etapa}`);
+            const txtHora = document.getElementById(`txtHora${etapa}Gps`);
+            const boxBtn = document.getElementById(`boxBtn${etapa}`);
+            const boxInfo = document.getElementById(`boxInfo${etapa}`);
+
+            dot.className = "step-dot bg-emerald-600 text-white font-extrabold shadow-sm";
+            dot.innerHTML = SVG_CHECK;
+            txtHora.innerText = geo.hora + 'h';
+            txtHora.className = "text-[11px] font-extrabold text-emerald-700";
+
+            boxBtn.style.display = 'none';
+            boxInfo.classList.remove('hidden');
+
+            let extraKm = kmOpcional ? `<div><strong>Odômetro:</strong> ${kmOpcional} km</div>` : '';
+            let extraObs = obsOpcional ? `<div><strong>Observação:</strong> ${obsOpcional}</div>` : '';
+            let extraCheck = checklistOpcional ? `<div><strong>Vistoria de Saída:</strong> Verificada pelo condutor</div>` : '';
+
+            boxInfo.innerHTML = `
+                <div class="font-mono"><strong>GPS Satélite:</strong> Lat ${geo.lat.toFixed(5)}, Lon ${geo.lon.toFixed(5)}</div>
+                <div><strong>Precisão:</strong> ±${Math.round(geo.precisao)}m • <strong>Status:</strong> Autêntico (Sem Mock)</div>
+                ${extraCheck}
+                ${extraKm}
+                ${extraObs}
+            `;
+        }
+
+        // TESTAR SINAL DE SATÉLITE ATUAL
+        window.testarSinalSateliteAtual = function() {
+            vibrarConfirmacao([25]);
+            exibirAvisoGps("info", "Verificando conexão com os satélites GPS do celular...");
+            obterPosicaoHibrida(
+                (position) => {
+                    const c = position.coords;
+                    const distAcari = calcularDistanciaKm(c.latitude, c.longitude, COORDENADAS_DESTINOS.ACARI.lat, COORDENADAS_DESTINOS.ACARI.lon);
+                    exibirAvisoGps("sucesso", `Sinal GPS excelente! Precisão: ±${Math.round(c.accuracy)}m • Distância até Acari: ${distAcari.toFixed(1)} km.`);
+                },
+                (errMsg) => {
+                    exibirAvisoGps("erro", errMsg);
+                }
+            );
+        };
+
+        function obterPosicaoHibrida(onSuccess, onError) {
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 15000,
+                maximumAge: 0
+            };
+
+            if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Geolocation) {
+                window.Capacitor.Plugins.Geolocation.getCurrentPosition(options)
+                    .then(pos => onSuccess(pos))
+                    .catch(() => usarGeolocationPadrao(options, onSuccess, onError));
+            } else {
+                usarGeolocationPadrao(options, onSuccess, onError);
+            }
+        }
+
+        function usarGeolocationPadrao(options, onSuccess, onError) {
+            if (!navigator.geolocation) {
+                onError("Seu celular não suporta a API de Geolocalização.");
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(
+                onSuccess,
+                (error) => {
+                    let msg = "Falha ao obter localização.";
+                    if (error.code === error.PERMISSION_DENIED) {
+                        msg = "Permissão de GPS negada. Por favor, autorize a localização nas configurações do seu aparelho.";
+                    } else if (error.code === error.POSITION_UNAVAILABLE) {
+                        msg = "Sinal de satélite indisponível. Vá para um local aberto ou ligue o GPS do aparelho.";
+                    } else if (error.code === error.TIMEOUT) {
+                        msg = "Tempo limite excedido ao buscar satélites. Tente novamente.";
+                    }
+                    onError(msg);
+                },
+                options
+            );
+        }
+
+        // ========================================================
+        // CAPTURA DO GPS COM AS 3 CAMADAS ANTI-FRAUDE
+        // ========================================================
+        window.registrarPontoGps = async function(tipoPonto) {
+            vibrarConfirmacao([35]);
+            exibirAvisoGps("info", "Conectando aos satélites GPS... Por favor, aguarde.");
+
+            obterPosicaoHibrida(
+                async (position) => {
+                    await validarEProcessarCoordenada(position, tipoPonto);
+                },
+                (errMsg) => {
+                    exibirAvisoGps("erro", errMsg);
+                }
+            );
+        };
+
+        async function validarEProcessarCoordenada(position, tipoPonto) {
+            const coords = position.coords;
+            const lat = coords.latitude;
+            const lon = coords.longitude;
+            const precisao = coords.accuracy || 15;
+
+            const isMock = coords.isMock || coords.mocked || position.mocked || (precisao === 0);
+            if (isMock) {
+                vibrarConfirmacao([100, 50, 100]);
+                exibirAvisoGps("erro", "FRAUDE DETECTADA: Foi detectado o uso de aplicativo de localização simulada (Fake GPS). Desative o aplicativo para registrar a missão.");
+                alert("Operação Bloqueada: Localização simulada detectada.");
+                return;
+            }
+
+            if (precisao > 150 && !modoSimulacaoTeste) {
+                exibirAvisoGps("erro", `Precisão fraca (±${Math.round(precisao)}m). O sistema exige precisão de satélite (< 150m). Ative o GPS de Alta Precisão.`);
+                return;
+            }
+
+            const destinoAlvo = (viagemAtiva?.destino || 'NATAL').toUpperCase().trim();
+
+            if (!modoSimulacaoTeste) {
+                if (tipoPonto === 'SAIDA') {
+                    const distAcari = calcularDistanciaKm(lat, lon, COORDENADAS_DESTINOS.ACARI.lat, COORDENADAS_DESTINOS.ACARI.lon);
+                    if (distAcari > COORDENADAS_DESTINOS.ACARI.raioKm) {
+                        exibirAvisoGps("erro", `Você está a ${Math.round(distAcari)} km de Acari. O registro de saída deve ser feito no município de Acari.`);
+                        return;
+                    }
+                } else if (tipoPonto === 'CHEGADA') {
+                    const coordDest = COORDENADAS_DESTINOS[destinoAlvo] || COORDENADAS_DESTINOS["NATAL"];
+                    const distDestino = calcularDistanciaKm(lat, lon, coordDest.lat, coordDest.lon);
+                    if (distDestino > coordDest.raioKm) {
+                        exibirAvisoGps("erro", `Localização Incompatível: Você está a ${Math.round(distDestino)} km de ${destinoAlvo}. A confirmação de chegada só pode ser feita na cidade destino.`);
+                        return;
+                    }
+                } else if (tipoPonto === 'RETORNO') {
+                    const distAcari = calcularDistanciaKm(lat, lon, COORDENADAS_DESTINOS.ACARI.lat, COORDENADAS_DESTINOS.ACARI.lon);
+                    if (distAcari > COORDENADAS_DESTINOS.ACARI.raioKm) {
+                        exibirAvisoGps("erro", `Você ainda está a ${Math.round(distAcari)} km de Acari. A confirmação de retorno só é permitida de volta a Acari.`);
+                        return;
+                    }
+                }
+            }
+
+            const agora = new Date();
+            const horaStr = `${String(agora.getHours()).padStart(2,'0')}:${String(agora.getMinutes()).padStart(2,'0')}`;
+
+            const dadosGeo = {
+                hora: horaStr,
+                lat: lat,
+                lon: lon,
+                precisao: precisao,
+                satelite: true,
+                timestamp: agora.toISOString()
+            };
+
+            let campoDb = (tipoPonto === 'SAIDA') ? 'geoSaida' : ((tipoPonto === 'CHEGADA') ? 'geoChegada' : 'geoRetorno');
+            viagemAtiva[campoDb] = dadosGeo;
+
+            const kmSaidaVal = (document.getElementById('inputKmSaida')?.value || '').trim();
+            const kmRetornoVal = (document.getElementById('inputKmRetorno')?.value || '').trim();
+            const obsViagemVal = (document.getElementById('inputObsViagem')?.value || '').trim();
+
+            const updateObj = { [campoDb]: dadosGeo };
+
+            if (tipoPonto === 'SAIDA') {
+                viagemAtiva.status = 'TRANSITO';
+                viagemAtiva.checklistSaida = { ...estadoChecklist };
+                updateObj.status = 'TRANSITO';
+                updateObj.checklistSaida = { ...estadoChecklist };
+                if (kmSaidaVal) {
+                    viagemAtiva.kmSaida = kmSaidaVal;
+                    updateObj.kmSaida = kmSaidaVal;
+                }
+            } else if (tipoPonto === 'RETORNO') {
+                viagemAtiva.status = 'LIQUIDADO';
+                updateObj.status = 'LIQUIDADO';
+                if (kmRetornoVal) {
+                    viagemAtiva.kmRetorno = kmRetornoVal;
+                    updateObj.kmRetorno = kmRetornoVal;
+                }
+                if (obsViagemVal) {
+                    viagemAtiva.obsViagem = obsViagemVal;
+                    updateObj.obsViagem = obsViagemVal;
+                }
+            }
+
+            await salvarOuEnfileirarFirebase("diarias_motoristas", viagemAtiva.id, updateObj);
+
+            vibrarConfirmacao([50, 40, 80]);
+            atualizarCardKmRodado(viagemAtiva);
+            atualizarCalendarioEListaExtrato();
+
+            if (tipoPonto === 'SAIDA') {
+                aplicarEstiloPontoGravado('Saida', dadosGeo, viagemAtiva.kmSaida, null, viagemAtiva.checklistSaida);
+                document.getElementById('boxBtnChegada').classList.remove('opacity-50', 'pointer-events-none');
+                document.getElementById('badgeStatusMissao').innerText = "Em Trânsito";
+                document.getElementById('badgeStatusMissao').className = "text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-sky-100 text-sky-800 border border-sky-200 inline-block";
+                exibirAvisoGps("sucesso", `Saída registrada com sucesso às ${horaStr}h! GPS Autêntico.`);
+            } else if (tipoPonto === 'CHEGADA') {
+                aplicarEstiloPontoGravado('Chegada', dadosGeo);
+                document.getElementById('boxBtnRetorno').classList.remove('opacity-50', 'pointer-events-none');
+                document.getElementById('badgeStatusMissao').innerText = "No Destino";
+                exibirAvisoGps("sucesso", `Chegada em ${destinoAlvo} confirmada às ${horaStr}h! GPS Autêntico.`);
+            } else if (tipoPonto === 'RETORNO') {
+                aplicarEstiloPontoGravado('Retorno', dadosGeo, viagemAtiva.kmRetorno, viagemAtiva.obsViagem);
+                document.getElementById('badgeStatusMissao').innerText = "Missão Concluída";
+                document.getElementById('badgeStatusMissao').className = "text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 inline-block";
+                document.getElementById('boxBtnVerComprovanteCard').classList.remove('hidden');
+                exibirAvisoGps("sucesso", `Missão e retorno a Acari finalizados com sucesso às ${horaStr}h!`);
+                setTimeout(() => abrirModalComprovante(), 600);
+            }
+        }
+
+        async function salvarOuEnfileirarFirebase(colecao, docId, dados) {
+            if (!docId || docId.startsWith('tfd_') || docId.startsWith('demo_') || docId.startsWith('pac_demo_')) {
+                return;
+            }
+            try {
+                await updateDoc(doc(db, colecao, docId), dados);
+            } catch (e) {
+                const fila = JSON.parse(localStorage.getItem('regulagov_fila_offline') || '[]');
+                fila.push({ colecao, docId, dados, ts: Date.now() });
+                localStorage.setItem('regulagov_fila_offline', JSON.stringify(fila));
+                document.getElementById('txtFilaOffline').innerText = `${fila.length} salvo(s) offline`;
+            }
+        }
+
+        async function sincronizarFilaOffline() {
+            const fila = JSON.parse(localStorage.getItem('regulagov_fila_offline') || '[]');
+            if (fila.length === 0) return;
+
+            const restantes = [];
+            for (const item of fila) {
+                try {
+                    await updateDoc(doc(db, item.colecao, item.docId), item.dados);
+                } catch (e) {
+                    restantes.push(item);
+                }
+            }
+            localStorage.setItem('regulagov_fila_offline', JSON.stringify(restantes));
+            document.getElementById('txtFilaOffline').innerText = restantes.length === 0
+                ? "Frota de Saúde"
+                : `${restantes.length} pendente(s)`;
+        }
+
+        function exibirAvisoGps(tipo, texto) {
+            const box = document.getElementById('boxStatusGps');
+            box.classList.remove('hidden', 'bg-sky-50', 'border-sky-200', 'text-sky-800', 'bg-rose-50', 'border-rose-200', 'text-rose-800', 'bg-emerald-50', 'border-emerald-200', 'text-emerald-800');
+
+            let iconSvg = '';
+            if (tipo === 'erro') {
+                box.classList.add('bg-rose-50', 'border-rose-200', 'text-rose-800');
+                iconSvg = `<svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`;
+            } else if (tipo === 'sucesso') {
+                box.classList.add('bg-emerald-50', 'border-emerald-200', 'text-emerald-800');
+                iconSvg = `<svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`;
+            } else {
+                box.classList.add('bg-sky-50', 'border-sky-200', 'text-sky-800');
+                iconSvg = `<svg class="w-4 h-4 text-sky-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`;
+            }
+            box.innerHTML = `${iconSvg}<span>${texto}</span>`;
+        }
+
+        // ========================================================
+        // CHECK-IN DE EMBARQUE (IDA) + RECOLHIMENTO (VOLTA)
+        // ========================================================
+        window.marcarEmbarquePassageiro = async function(index, novoStatus) {
+            const p = listaPassageiros[index];
+            if (!p) return;
+
+            vibrarConfirmacao([35]);
+            const agora = new Date();
+            const horaEmbarque = `${String(agora.getHours()).padStart(2,'0')}:${String(agora.getMinutes()).padStart(2,'0')}`;
+
+            p.statusEmbarque = novoStatus;
+            p.horaEmbarque = horaEmbarque;
+            if (novoStatus === 'FALTOU') {
+                p.recolhidoVolta = false;
+            }
+
+            renderizarPassageiros();
+
+            await salvarOuEnfileirarFirebase("tfd_viagens", p.id, {
+                statusEmbarque: novoStatus,
+                horaEmbarque: horaEmbarque,
+                recolhidoVolta: p.recolhidoVolta || false,
+                motoristaConferente: motoristaAtivo
+            });
+        };
+
+        window.alternarRecolhimentoVolta = async function(index) {
+            const p = listaPassageiros[index];
+            if (!p) return;
+
+            vibrarConfirmacao([40]);
+            p.recolhidoVolta = !p.recolhidoVolta;
+            if (p.recolhidoVolta && p.statusEmbarque !== 'EMBARCOU') {
+                p.statusEmbarque = 'EMBARCOU';
+            }
+
+            renderizarPassageiros();
+
+            await salvarOuEnfileirarFirebase("tfd_viagens", p.id, {
+                statusEmbarque: p.statusEmbarque,
+                recolhidoVolta: p.recolhidoVolta,
+                motoristaConferente: motoristaAtivo
+            });
+        };
+
+        function renderizarPassageiros() {
+            const container = document.getElementById('listaPassageirosCondutor');
+            const badgeQtd = document.getElementById('badgeQtdPacientes');
+            const badgeTotal = document.getElementById('badgeTotalEmbarque');
+            const resumoCard = document.getElementById('txtResumoEmbarqueCard');
+            const txtIda = document.getElementById('txtContadorIda');
+            const txtVolta = document.getElementById('txtContadorVolta');
+
+            const total = listaPassageiros.length;
+            const embarcadosIda = listaPassageiros.filter(p => p.statusEmbarque === 'EMBARCOU').length;
+            const recolhidosVolta = listaPassageiros.filter(p => p.recolhidoVolta === true).length;
+
+            badgeQtd.innerText = total;
+            badgeTotal.innerText = `${total} passageiros`;
+            if (resumoCard) resumoCard.innerText = `${embarcadosIda} / ${total}`;
+            if (txtIda) txtIda.innerText = `${embarcadosIda} / ${total}`;
+            if (txtVolta) txtVolta.innerText = `${recolhidosVolta} / ${embarcadosIda || total}`;
+
+            if (total === 0) {
+                container.innerHTML = `<div class="text-center py-8 text-xs text-slate-400">Nenhum passageiro localizado para esta data.</div>`;
+                return;
+            }
+
+            let html = '';
+            listaPassageiros.forEach((p, idx) => {
+                const status = p.statusEmbarque || 'PENDENTE';
+                const naVanVolta = p.recolhidoVolta === true;
+
+                let cardBorder = 'border-slate-200 bg-white';
+                let badgeStatusHtml = `<span class="text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">Aguardando</span>`;
+
+                if (naVanVolta) {
+                    cardBorder = 'border-emerald-300 bg-emerald-50/30';
+                    badgeStatusHtml = `<span class="text-[10px] font-extrabold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full flex items-center gap-1">${SVG_CHECK} Na Van p/ Volta</span>`;
+                } else if (status === 'EMBARCOU') {
+                    cardBorder = 'border-sky-200 bg-sky-50/20';
+                    badgeStatusHtml = `<span class="text-[10px] font-extrabold bg-sky-100 text-sky-800 px-2 py-0.5 rounded-full">Embarcou (${p.horaEmbarque || 'Ida'})</span>`;
+                } else if (status === 'FALTOU') {
+                    cardBorder = 'border-rose-200 bg-rose-50/30 opacity-75';
+                    badgeStatusHtml = `<span class="text-[10px] font-extrabold bg-rose-100 text-rose-800 px-2 py-0.5 rounded-full">Não Compareceu</span>`;
+                }
+
+                let acompStr = (p.temAcomp === 'Sim') ? `<span class="text-[10.5px] text-sky-700 font-bold block mt-0.5">Acompanhante: ${p.nomeAcomp || 'Sim'}</span>` : '';
+                let clinicaStr = p.clinica ? p.clinica : 'Consulta SUS';
+                let destinoMapa = encodeURIComponent(`${clinicaStr} ${viagemAtiva?.destino || 'Natal RN'}`);
+                let telLimpo = (p.tel || '').replace(/\D/g, '');
+
+                let btnZap = telLimpo.length >= 8 ? `
+                    <a href="https://wa.me/55${telLimpo}" target="_blank" class="bg-emerald-500 hover:bg-emerald-600 text-white px-2.5 py-2 rounded-xl flex items-center justify-center text-[11px] font-bold gap-1 shadow-sm transition">
+                        ${SVG_WHATSAPP}
+                        <span>WhatsApp</span>
+                    </a>
+                ` : '';
+
+                html += `
+                    <div class="border ${cardBorder} rounded-xl p-3 shadow-sm space-y-2.5 transition">
+                        <div class="flex items-start justify-between gap-2">
+                            <div>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-xs font-extrabold text-sky-700 bg-sky-50 border border-sky-100 px-1.5 py-0.5 rounded">#${idx+1}</span>
+                                    <h5 class="text-xs font-extrabold text-slate-900">${p.nomePaciente}</h5>
+                                </div>
+                                ${acompStr}
+                            </div>
+                            ${badgeStatusHtml}
+                        </div>
+
+                        <div class="text-[11px] text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                            <div class="space-y-0.5">
+                                <span class="block">Embarque: <strong>${p.embarque || 'Sede'}</strong></span>
+                                <span class="block">Destino: <strong>${clinicaStr}</strong></span>
+                            </div>
+                            <a href="https://www.google.com/maps/search/?api=1&query=${destinoMapa}" target="_blank" class="text-[10.5px] font-extrabold text-sky-600 hover:text-sky-800 bg-white border border-sky-200 px-2 py-1 rounded-lg flex items-center gap-1">
+                                <span>Abrir Mapa</span>
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                            </a>
+                        </div>
+
+                        <div class="flex items-center justify-between gap-1.5 pt-0.5">
+                            <button type="button" onclick="marcarEmbarquePassageiro(${idx}, 'EMBARCOU')" class="flex-1 py-1.5 px-2 rounded-lg font-extrabold text-[11px] border flex items-center justify-center gap-1 transition ${status === 'EMBARCOU' ? 'bg-sky-600 text-white border-sky-600' : 'bg-white text-sky-700 border-sky-200 hover:bg-sky-50'}">
+                                ${SVG_CHECK}
+                                <span>Ida OK</span>
+                            </button>
+
+                            <button type="button" onclick="alternarRecolhimentoVolta(${idx})" class="flex-1 py-1.5 px-2 rounded-lg font-extrabold text-[11px] border flex items-center justify-center gap-1 transition ${naVanVolta ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50'}">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
+                                <span>Volta OK</span>
+                            </button>
+
+                            <button type="button" onclick="marcarEmbarquePassageiro(${idx}, 'FALTOU')" class="py-1.5 px-2 rounded-lg font-extrabold text-[11px] border transition ${status === 'FALTOU' ? 'bg-rose-600 text-white border-rose-600' : 'bg-white text-slate-500 border-slate-200 hover:bg-rose-50 hover:text-rose-700'}" title="Marcar falta">
+                                Faltou
+                            </button>
+
+                            ${btnZap}
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // ========================================================
+        // ABASTECIMENTO E SOS
+        // ========================================================
+        window.abrirModalAbastecimento = function() {
+            document.getElementById('modalAbastecimento').classList.remove('hidden');
+            renderizarListaAbastecimentosModal();
+        };
+
+        window.fecharModalAbastecimento = function() {
+            document.getElementById('modalAbastecimento').classList.add('hidden');
+        };
+
+        window.salvarAbastecimentoViagem = async function(e) {
+            e.preventDefault();
+            if (!viagemAtiva) {
+                alert("Carregue ou simule uma viagem ativa primeiro.");
+                return;
+            }
+            const litros = parseFloat(document.getElementById('inputLitrosAbast').value || 0);
+            const valor = parseFloat(document.getElementById('inputValorAbast').value || 0);
+            const km = (document.getElementById('inputKmAbast').value || '').trim();
+            const posto = (document.getElementById('inputPostoAbast').value || 'Posto em Rota').trim();
+
+            const novoItem = {
+                litros,
+                valor,
+                km,
+                posto,
+                hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+            };
+
+            if (!Array.isArray(viagemAtiva.abastecimentos)) {
+                viagemAtiva.abastecimentos = [];
+            }
+            viagemAtiva.abastecimentos.push(novoItem);
+
+            await salvarOuEnfileirarFirebase("diarias_motoristas", viagemAtiva.id, {
+                abastecimentos: viagemAtiva.abastecimentos
+            });
+
+            vibrarConfirmacao([40]);
+            document.getElementById('inputLitrosAbast').value = '';
+            document.getElementById('inputValorAbast').value = '';
+            document.getElementById('inputKmAbast').value = '';
+            document.getElementById('inputPostoAbast').value = '';
+
+            atualizarResumoAbastecimentoCard(viagemAtiva);
+            renderizarListaAbastecimentosModal();
+        };
+
+        function atualizarResumoAbastecimentoCard(v) {
+            const el = document.getElementById('txtResumoAbastecimento');
+            if (!el) return;
+            const lista = v?.abastecimentos || [];
+            if (lista.length === 0) {
+                el.innerText = "Registrar cupom/litros";
+            } else {
+                const somaLitros = lista.reduce((acc, i) => acc + (parseFloat(i.litros)||0), 0);
+                const somaValor = lista.reduce((acc, i) => acc + (parseFloat(i.valor)||0), 0);
+                el.innerText = `${somaLitros.toFixed(1)}L • R$ ${somaValor.toFixed(2).replace('.', ',')}`;
+            }
+        }
+
+        function renderizarListaAbastecimentosModal() {
+            const box = document.getElementById('listaAbastecimentosSalvos');
+            const lista = viagemAtiva?.abastecimentos || [];
+            if (lista.length === 0) {
+                box.innerHTML = `<div class="text-slate-400 text-center py-2">Nenhum abastecimento lançado nesta viagem.</div>`;
+                return;
+            }
+            box.innerHTML = lista.map(a => `
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-2 flex justify-between items-center">
+                    <div>
+                        <strong class="text-slate-800">${a.litros}L — R$ ${parseFloat(a.valor).toFixed(2).replace('.', ',')}</strong>
+                        <span class="block text-[10px] text-slate-500">${a.posto} ${a.km ? '• KM ' + a.km : ''} (${a.hora})</span>
+                    </div>
+                    <span class="text-emerald-700 font-bold text-[10px]">Gravado</span>
+                </div>
+            `).join('');
+        }
+
+        window.abrirModalSos = function() {
+            document.getElementById('modalSos').classList.remove('hidden');
+        };
+
+        window.fecharModalSos = function() {
+            document.getElementById('modalSos').classList.add('hidden');
+        };
+
+        window.dispararAlertaSosGps = function() {
+            vibrarConfirmacao([80, 40, 80]);
+            const tipo = document.getElementById('selTipoSos').value;
+            const detalhe = (document.getElementById('inputDetalheSos').value || '').trim();
+
+            obterPosicaoHibrida(
+                async (pos) => {
+                    const lat = pos.coords.latitude.toFixed(5);
+                    const lon = pos.coords.longitude.toFixed(5);
+                    const linkMapa = `https://www.google.com/maps?q=${lat},${lon}`;
+
+                    if (viagemAtiva && viagemAtiva.id) {
+                        await salvarOuEnfileirarFirebase("diarias_motoristas", viagemAtiva.id, {
+                            alertaSos: {
+                                tipo,
+                                detalhe,
+                                lat,
+                                lon,
+                                timestamp: new Date().toISOString()
+                            }
+                        });
+                    }
+
+                    const msgZap = encodeURIComponent(
+                        `*ALERTA SOS FROTA TFD - REGULAGOV ACARI*\n` +
+                        `*Condutor:* ${motoristaAtivo || '-'}\n` +
+                        `*Viagem:* Acari ➔ ${viagemAtiva?.destino || '-'}\n` +
+                        `*Ocorrência:* ${tipo}\n` +
+                        (detalhe ? `*Detalhe:* ${detalhe}\n` : '') +
+                        `*Localização GPS Exata:* ${linkMapa}`
+                    );
+                    fecharModalSos();
+                    window.open(`https://wa.me/?text=${msgZap}`, '_blank');
+                },
+                () => {
+                    const msgZap = encodeURIComponent(
+                        `*ALERTA SOS FROTA TFD - REGULAGOV ACARI*\n` +
+                        `*Condutor:* ${motoristaAtivo || '-'}\n` +
+                        `*Ocorrência:* ${tipo}\n` +
+                        (detalhe ? `*Detalhe:* ${detalhe}` : '')
+                    );
+                    fecharModalSos();
+                    window.open(`https://wa.me/?text=${msgZap}`, '_blank');
+                }
+            );
+        };
+
+        // ========================================================
+        // COMPROVANTE DIGITAL OFICIAL DA VIAGEM / DIÁRIA
+        // ========================================================
+        window.abrirModalComprovante = function(viagemEspecifica = null) {
+            const v = viagemEspecifica || viagemAtiva;
+            if (!v) return;
+            viagemComprovanteAlvo = v;
+
+            const ini = parseFloat(v.kmSaida || 0);
+            const fim = parseFloat(v.kmRetorno || 0);
+            const rodadoStr = (ini > 0 && fim > ini) ? `${fim - ini} km (${ini} ➔ ${fim} km)` : (ini > 0 ? `KM Saída: ${ini}` : 'Não informado');
+            const codigoHash = `RGV-${(v.id || 'ACARI').slice(-5).toUpperCase()}-${(v.data || '').replace(/\D/g, '').slice(-4)}`;
+            const dataFmt = (v.data || '').split('-').reverse().join('/');
+
+            const html = `
+                <div class="bg-sky-50 border border-sky-200 rounded-xl p-3 space-y-1">
+                    <div class="flex justify-between">
+                        <span class="text-slate-500 font-semibold">Código Autenticidade:</span>
+                        <strong class="font-mono text-sky-800">${codigoHash}</strong>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-500 font-semibold">Data da Viagem:</span>
+                        <strong class="text-slate-900">${dataFmt}</strong>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-500 font-semibold">Condutor:</span>
+                        <strong class="text-slate-900">${motoristaAtivo}</strong>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-500 font-semibold">Destino / Veículo:</span>
+                        <strong class="text-slate-900">${v.destino} • ${v.veiculo || 'Van Oficial'}</strong>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-500 font-semibold">Diária Concedida:</span>
+                        <strong class="text-emerald-700">R$ ${(parseFloat(v.valor)||0).toFixed(2).replace('.', ',')}</strong>
+                    </div>
+                </div>
+
+                <div class="border border-slate-200 rounded-xl p-3 space-y-1.5">
+                    <strong class="text-slate-900 uppercase text-[10.5px] tracking-wider block">Telemetria GPS & Odômetro</strong>
+                    <div class="flex justify-between">
+                        <span>1. Saída de Acari:</span>
+                        <strong>${v.geoSaida ? v.geoSaida.hora + 'h (Verificado)' : 'Pendente'}</strong>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>2. Chegada em ${v.destino}:</span>
+                        <strong>${v.geoChegada ? v.geoChegada.hora + 'h (Verificado)' : 'Pendente'}</strong>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>3. Retorno a Acari:</span>
+                        <strong>${v.geoRetorno ? v.geoRetorno.hora + 'h (Verificado)' : 'Pendente'}</strong>
+                    </div>
+                    <div class="flex justify-between pt-1 border-t border-slate-100">
+                        <span>Distância / Odômetro:</span>
+                        <strong class="text-sky-700">${rodadoStr}</strong>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('corpoComprovanteHtml').innerHTML = html;
+            document.getElementById('modalComprovante').classList.remove('hidden');
+        };
+
+        window.abrirComprovantePorId = function(idViagem) {
+            const encontrada = listaHistorico.find(h => h.id === idViagem) || viagemAtiva;
+            if (encontrada) abrirModalComprovante(encontrada);
+        };
+
+        window.fecharModalComprovante = function() {
+            document.getElementById('modalComprovante').classList.add('hidden');
+        };
+
+        window.compartilharComprovanteWhatsApp = function() {
+            const v = viagemComprovanteAlvo || viagemAtiva;
+            if (!v) return;
+            const ini = parseFloat(v.kmSaida || 0);
+            const fim = parseFloat(v.kmRetorno || 0);
+            const rodadoStr = (ini > 0 && fim > ini) ? `${fim - ini} km` : 'N/I';
+            const dataFmt = (v.data || '').split('-').reverse().join('/');
+
+            const texto = encodeURIComponent(
+                `*COMPROVANTE DE VIAGEM TFD - REGULAGOV ACARI*\n` +
+                `*Data:* ${dataFmt}\n` +
+                `*Condutor:* ${motoristaAtivo}\n` +
+                `*Destino:* Acari ➔ ${v.destino}\n` +
+                `*Saída GPS:* ${v.geoSaida?.hora || '-'}h | *Chegada:* ${v.geoChegada?.hora || '-'}h | *Retorno:* ${v.geoRetorno?.hora || '-'}h\n` +
+                `*KM Rodado:* ${rodadoStr}\n` +
+                `*Valor Diária:* R$ ${(parseFloat(v.valor)||0).toFixed(2).replace('.', ',')}\n` +
+                `*Status:* Auditoria Satelital RegulaGov`
+            );
+            window.open(`https://wa.me/?text=${texto}`, '_blank');
+        };
+
+        // ========================================================
+        // CALENDÁRIO INTERATIVO DE VIAGENS + EXTRATO DE DIÁRIAS
+        // ========================================================
+        const NOMES_MESES = [
+            "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+            "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+        ];
+
+        async function carregarExtratoDiarias(nomeCondutor) {
+            try {
+                const snap = await getDocs(collection(db, "diarias_motoristas"));
+                listaHistorico = [];
+
+                snap.forEach(d => {
+                    const item = { id: d.id, ...d.data() };
+                    if (item.motorista && item.motorista.toUpperCase().trim() === nomeCondutor.toUpperCase().trim()) {
+                        listaHistorico.push(item);
+                    }
+                });
+
+                listaHistorico.sort((a,b) => (b.data || '').localeCompare(a.data || ''));
+                atualizarCalendarioEListaExtrato();
+            } catch(e) {
+                console.warn("Erro ao carregar histórico:", e);
+                atualizarCalendarioEListaExtrato();
+            }
+        }
+
+        window.mudarMesCalendario = function(delta) {
+            vibrarConfirmacao([20]);
+            calMesAtual += delta;
+            if (calMesAtual < 0) {
+                calMesAtual = 11;
+                calAnoAtual--;
+            } else if (calMesAtual > 11) {
+                calMesAtual = 0;
+                calAnoAtual++;
+            }
+            calDataSelecionadaISO = null;
+            atualizarCalendarioEListaExtrato();
+        };
+
+        window.selecionarDataCalendario = function(dataISO) {
+            vibrarConfirmacao([30]);
+            calDataSelecionadaISO = (calDataSelecionadaISO === dataISO) ? null : dataISO;
+            atualizarCalendarioEListaExtrato();
+        };
+
+        function atualizarCalendarioEListaExtrato() {
+            const txtMesAno = document.getElementById('txtMesAnoCalendario');
+            const grid = document.getElementById('gridDiasCalendario');
+            const containerLista = document.getElementById('listaExtratoDiarias');
+            const txtSoma = document.getElementById('txtSomaDiariasMes');
+            const btnLimpar = document.getElementById('btnLimparFiltroData');
+            const subtitulo = document.getElementById('txtSubtituloListaExtrato');
+
+            if (!txtMesAno || !grid) return;
+
+            txtMesAno.innerText = `${NOMES_MESES[calMesAtual]} de ${calAnoAtual}`;
+            const prefixoMesISO = `${calAnoAtual}-${String(calMesAtual + 1).padStart(2, '0')}`;
+
+            // Mapear viagens deste mês por data ISO (YYYY-MM-DD)
+            const mapaViagensPorDia = {};
+            let somaMes = 0;
+
+            listaHistorico.forEach(h => {
+                if ((h.data || '').startsWith(prefixoMesISO)) {
+                    somaMes += (parseFloat(h.valor) || 0);
+                    if (!mapaViagensPorDia[h.data]) {
+                        mapaViagensPorDia[h.data] = [];
+                    }
+                    mapaViagensPorDia[h.data].push(h);
+                }
+            });
+
+            if (txtSoma) {
+                txtSoma.innerText = `R$ ${somaMes.toFixed(2).replace('.', ',')}`;
+            }
+
+            // Construir os dias do calendário
+            const primeiroDiaSemana = new Date(calAnoAtual, calMesAtual, 1).getDay();
+            const totalDiasMes = new Date(calAnoAtual, calMesAtual + 1, 0).getDate();
+
+            let htmlGrid = '';
+            for (let i = 0; i < primeiroDiaSemana; i++) {
+                htmlGrid += `<div class="h-9"></div>`;
+            }
+
+            for (let dia = 1; dia <= totalDiasMes; dia++) {
+                const dataISO = `${prefixoMesISO}-${String(dia).padStart(2, '0')}`;
+                const viagensNoDia = mapaViagensPorDia[dataISO] || [];
+                const isSelecionado = (calDataSelecionadaISO === dataISO);
+
+                let estiloBtn = "bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-100";
+                let dotIndicador = "";
+
+                if (viagensNoDia.length > 0) {
+                    const algumaLiquidada = viagensNoDia.some(v => v.status === 'LIQUIDADO' || (v.geoSaida && v.geoRetorno));
+                    if (algumaLiquidada) {
+                        estiloBtn = "bg-emerald-500 text-white font-extrabold shadow-xs border border-emerald-600";
+                        dotIndicador = `<span class="w-1.5 h-1.5 rounded-full bg-white mx-auto mt-0.5 block"></span>`;
+                    } else {
+                        estiloBtn = "bg-sky-500 text-white font-extrabold shadow-xs border border-sky-600";
+                        dotIndicador = `<span class="w-1.5 h-1.5 rounded-full bg-white mx-auto mt-0.5 block"></span>`;
+                    }
+                }
+
+                if (isSelecionado) {
+                    estiloBtn += " ring-2 ring-slate-900 ring-offset-1 scale-105";
+                }
+
+                htmlGrid += `
+                    <button type="button" onclick="selecionarDataCalendario('${dataISO}')" class="h-10 rounded-xl text-xs flex flex-col items-center justify-center transition ${estiloBtn}">
+                        <span class="leading-none">${dia}</span>
+                        ${dotIndicador}
+                    </button>
+                `;
+            }
+            grid.innerHTML = htmlGrid;
+
+            // Filtrar as viagens a exibir abaixo do calendário
+            let viagensExibidas = [];
+            if (calDataSelecionadaISO) {
+                btnLimpar.classList.remove('hidden');
+                const dataFmtSel = calDataSelecionadaISO.split('-').reverse().join('/');
+                subtitulo.innerText = `Informações da viagem em ${dataFmtSel}`;
+                viagensExibidas = mapaViagensPorDia[calDataSelecionadaISO] || [];
+            } else {
+                btnLimpar.classList.add('hidden');
+                subtitulo.innerText = `Viagens de ${NOMES_MESES[calMesAtual]} (${Object.values(mapaViagensPorDia).flat().length})`;
+                viagensExibidas = listaHistorico.filter(h => (h.data || '').startsWith(prefixoMesISO));
+            }
+
+            if (viagensExibidas.length === 0) {
+                containerLista.innerHTML = `
+                    <div class="bg-white border border-slate-200 rounded-2xl p-6 text-center text-xs text-slate-400">
+                        ${calDataSelecionadaISO ? 'Nenhuma viagem registrada para este dia selecionado.' : 'Nenhuma viagem registrada neste mês.'}
+                    </div>
+                `;
+                return;
+            }
+
+            let htmlLista = '';
+            viagensExibidas.forEach(h => {
+                const dataFmt = (h.data || '').split('-').reverse().join('/');
+                const statusBadge = h.status === 'LIQUIDADO' 
+                    ? `<span class="text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full">Liquidada</span>`
+                    : `<span class="text-[10px] font-bold bg-sky-50 text-sky-800 border border-sky-200 px-2 py-0.5 rounded-full">Em Aberto</span>`;
+
+                const ini = parseFloat(h.kmSaida || 0);
+                const fim = parseFloat(h.kmRetorno || 0);
+                const kmStr = (ini > 0 && fim > ini) ? `${fim - ini} km rodados (${ini}➔${fim})` : (ini > 0 ? `KM Saída: ${ini}` : 'KM não informado');
+
+                htmlLista += `
+                    <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <strong class="text-xs font-extrabold text-slate-900">${dataFmt} — Acari ➔ ${h.destino}</strong>
+                                    ${statusBadge}
+                                </div>
+                                <span class="text-[11px] text-slate-500 block mt-0.5">${h.tipoDiaria || 'Diária TFD'} • ${h.veiculo || 'Van Oficial'}</span>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-sm font-extrabold text-emerald-700">R$ ${(parseFloat(h.valor)||0).toFixed(2).replace('.', ',')}</span>
+                            </div>
+                        </div>
+
+                        <!-- Detalhes de Horários GPS e Odômetro da Viagem Selecionada -->
+                        <div class="grid grid-cols-3 gap-1.5 bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-[10.5px]">
+                            <div>
+                                <span class="text-slate-400 block font-semibold">1. Saída Acari</span>
+                                <strong class="text-slate-800">${h.geoSaida ? h.geoSaida.hora + 'h ✓' : 'Pendente'}</strong>
+                            </div>
+                            <div>
+                                <span class="text-slate-400 block font-semibold">2. Chegada</span>
+                                <strong class="text-slate-800">${h.geoChegada ? h.geoChegada.hora + 'h ✓' : 'Pendente'}</strong>
+                            </div>
+                            <div>
+                                <span class="text-slate-400 block font-semibold">3. Retorno</span>
+                                <strong class="text-slate-800">${h.geoRetorno ? h.geoRetorno.hora + 'h ✓' : 'Pendente'}</strong>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-1 text-[11px]">
+                            <span class="text-slate-600 font-semibold">Odômetro: <strong class="text-slate-800">${kmStr}</strong></span>
+                            <button type="button" onclick="abrirComprovantePorId('${h.id}')" class="text-sky-600 hover:text-sky-800 font-extrabold flex items-center gap-1">
+                                <span>Ver Comprovante</span>
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            containerLista.innerHTML = htmlLista;
+        }
+
+        // ALTERNAR ABAS INTERNAS
+        window.trocarAbaCondutor = function(aba) {
+            vibrarConfirmacao([15]);
+            document.getElementById('abaConteudoMissao').classList.add('hidden');
+            document.getElementById('abaConteudoPassageiros').classList.add('hidden');
+            document.getElementById('abaConteudoExtrato').classList.add('hidden');
+
+            const inativoClass = "flex-1 flex flex-col items-center justify-center py-1.5 rounded-xl text-slate-500 font-bold hover:text-slate-900 transition relative";
+            const ativoClass = "flex-1 flex flex-col items-center justify-center py-1.5 rounded-xl text-sky-700 bg-sky-50 font-extrabold transition relative";
+
+            document.getElementById('tabBtnMissao').className = inativoClass;
+            document.getElementById('tabBtnPassageiros').className = inativoClass;
+            document.getElementById('tabBtnExtrato').className = inativoClass;
+
+            if (aba === 'missao') {
+                document.getElementById('abaConteudoMissao').classList.remove('hidden');
+                document.getElementById('tabBtnMissao').className = ativoClass;
+            } else if (aba === 'passageiros') {
+                document.getElementById('abaConteudoPassageiros').classList.remove('hidden');
+                document.getElementById('tabBtnPassageiros').className = ativoClass;
+            } else if (aba === 'extrato') {
+                document.getElementById('abaConteudoExtrato').classList.remove('hidden');
+                document.getElementById('tabBtnExtrato').className = ativoClass;
+                atualizarCalendarioEListaExtrato();
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        // INICIALIZAÇÃO
+        carregarListaCondutores();
+    </script>
+</body>
+</html>
